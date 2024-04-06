@@ -95,6 +95,8 @@ ax.plot([2.9,5.05], [1.65,1.65], '--r')
 ax.plot([4.65,4.65], [1.65,1.9], '--r')
 plt.show()
 
+
+#Agora fazendo com a biblioteca inteira
 x = iris.drop('target', axis=1)
 y = iris['target']
 
@@ -108,5 +110,4 @@ tree.plot_tree(clf2)
 plt.show()
 
 y_pred2 = clf2.predict(x_teste)
-
 print(confusion_matrix(y_teste, y_pred2))
