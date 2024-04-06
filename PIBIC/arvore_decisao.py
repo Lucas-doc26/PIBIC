@@ -30,7 +30,7 @@ plt.show()
 from sklearn import tree
 clf = tree.DecisionTreeClassifier()
 clf = clf.fit(x_treino, y_treino)
-print(clf.score(x_treino, y_treino))
+print("O score:", clf.score(x_treino, y_treino))
 
 #regras da árvore de treino
 fig, ax = plt.subplots()
@@ -102,7 +102,7 @@ y = iris['target']
 
 x_treino, x_teste, y_treino, y_teste = train_test_split(x, y, test_size=0.3, random_state=42)
 clf2 = tree.DecisionTreeClassifier(random_state=42).fit(x_treino, y_treino)
-print(clf2.score(x_treino, y_treino))
+print("O score:", clf2.score(x_treino, y_treino))
 
 fig, ax = plt.subplots(figsize=(10,8))
 
