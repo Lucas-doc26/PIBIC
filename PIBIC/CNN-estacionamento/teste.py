@@ -1,43 +1,47 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-import numpy as np
-import os
 from PIL import Image
 import tensorflow as tf
-from tensorflow import keras
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.callbacks import ModelCheckpoint
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense
 from sklearn.model_selection import train_test_split
 
-dataframe = pd.read_csv('datasets\df_conjunto_5k.csv')
+dataframe = pd.read_csv('Datasets/df_PUC.csv')
 
-# Divida o DataFrame em conjuntos de treino e teste
+# divisao - 60%/20%/20
 treino, teste = train_test_split(dataframe, test_size=0.2, random_state=42)
-nome_classe = ['ocupada', 'vaga']
+treino, validacao = train_test_split(treino, test_size=0.25, random_state=42)
 
+nome_classe = ['ocupada', 'vaga']
+print(treino.head())
 plt.figure(figsize=(15, 15))
+plt.title("Dataset PUCPR", fontsize=25)
+plt.grid(False)
 for i in range(9):
-    caminho_imagem = treino.iloc[i]['caminho_imagem']
-    imagem = Image.open(caminho_imagem)
-    plt.subplot(3, 3, i + 1)
-    plt.xticks([])
-    plt.yticks([])
-    plt.grid(False)
-    plt.imshow(imagem)
-    plt.xlabel(treino.iloc[i]['classe'], fontsize=25)
+    try:
+        caminho_imagem = treino.iloc[i]['caminho_imagem']
+        imagem = Image.open(caminho_imagem)
+        plt.subplot(3, 3, i + 1)
+        plt.xticks([])
+        plt.yticks([])
+        plt.grid(False)
+        plt.imshow(imagem)
+        plt.xlabel(treino.iloc[i]['classe'], fontsize=25)
+    except FileNotFoundError:
+        print(f"Erro ao abrir o arquivo: {caminho_imagem}")
 plt.show()
 
-# Defina os parâmetros da imagem
+#parâmetros da imagem
 img_width, img_height = 64, 64
 batch_size = 32
 
-# Inicialize os geradores de dados com normalização
-train_datagen = ImageDataGenerator(rescale=1./255)
-test_datagen = ImageDataGenerator(rescale=1./255)
+treino_datagen = ImageDataGenerator(rescale=1./255)
+validacao_datagen = ImageDataGenerator(rescale=1./255)
+teste_dategen = ImageDataGenerator(rescale=1./255)
 
-train_generator = train_datagen.flow_from_dataframe(
+treino_gerador = treino_datagen.flow_from_dataframe(
     dataframe=treino,
     x_col='caminho_imagem',
     y_col='classe',
@@ -46,7 +50,16 @@ train_generator = train_datagen.flow_from_dataframe(
     class_mode='binary'
 )
 
-test_generator = test_datagen.flow_from_dataframe(
+validacao_gerador = validacao_datagen.flow_from_dataframe(
+    dataframe=validacao,
+    x_col='caminho_imagem',
+    y_col='classe',
+    target_size=(img_width, img_height),
+    batch_size=batch_size,
+    class_mode='binary'
+)
+
+teste_generator = teste_dategen.flow_from_dataframe(
     dataframe=teste,
     x_col='caminho_imagem',
     y_col='classe',
@@ -55,8 +68,9 @@ test_generator = test_datagen.flow_from_dataframe(
     class_mode='binary'
 )
 
+# Definir arquitetura do modelo
 modelo_pucpr = Sequential([
-    Conv2D(64, (3, 3), activation='relu', input_shape=(img_width, img_height, 3)),
+    Conv2D(32, (3, 3), activation='relu', input_shape=(img_width, img_height, 3)),
     MaxPooling2D(pool_size=(2, 2)),
     Conv2D(64, (3, 3), activation='relu'),
     MaxPooling2D(pool_size=(2, 2)),
@@ -67,23 +81,22 @@ modelo_pucpr = Sequential([
     Dense(1, activation='sigmoid')
 ])
 
-# Compilando o modelo
+# Compilar o modelo
 modelo_pucpr.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
 
-#Checkpoint
+#checkpoint
 checkpoint_path = 'weights-improvement-{epoch:02d}-{val_accuracy:.2f}.weights.h5'
-cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path, save_weights_only=True, verbose=1)
+cp_callback = ModelCheckpoint(filepath=checkpoint_path, save_weights_only=True, verbose=1)
 
-# Treinando o modelo
-modelo_pucpr.fit(
-    train_generator,
+# Treinar o modelo com validação
+history = modelo_pucpr.fit(
+    treino_gerador,
     epochs=10,
-    callbacks=cp_callback,
-    validation_data=test_generator
+    callbacks=[cp_callback],
+    validation_data=validacao_gerador
 )
 
-# Avaliando o modelo
-loss, accuracy = modelo_pucpr.evaluate(test_generator)
-print(f'Perda de teste: {loss:.4f}, Precisão de teste: {accuracy:.4f}')
+perca, precisao = modelo_pucpr.evaluate(teste_generator)
+print(f'Perda de teste: {perca:.4f}, Precisão de teste: {precisao:.4f}')
 
 modelo_pucpr.save("modelo_pucpr.keras")

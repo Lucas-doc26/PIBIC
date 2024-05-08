@@ -6,15 +6,16 @@ import matplotlib.pyplot as plt
 
 modelo_pucpr = keras.models.load_model("modelo_pucpr.keras")
 
-dataframe_ufpr04 = pd.read_csv('Datasets/df_ufpr04.csv')
+dataframe_ufpr05 = pd.read_csv('Datasets/df_ufpr05.csv')
+print(dataframe_ufpr05.head())
 
 img_width, img_height = 64, 64
 batch_size = 32
 
-ufpr04_datagen = ImageDataGenerator(rescale=1./255)
+ufpr05_datagen = ImageDataGenerator(rescale=1./255)
 
-ufpr04_gerador = ufpr04_datagen.flow_from_dataframe(
-    dataframe=dataframe_ufpr04,
+ufpr05_gerador = ufpr05_datagen.flow_from_dataframe(
+    dataframe=dataframe_ufpr05,
     x_col='caminho_imagem',
     target_size=(img_width, img_height),
     batch_size=batch_size,
@@ -23,30 +24,33 @@ ufpr04_gerador = ufpr04_datagen.flow_from_dataframe(
 )
 
 
-predicoes = modelo_pucpr.predict(ufpr04_gerador)
+predicoes = modelo_pucpr.predict(ufpr05_gerador)
 limiar = 0.5
 classes_preditas_numericas = (predicoes > limiar).astype(int)
 classes_preditas = ['ocupada' if pred == 0 else 'vaga' for pred in classes_preditas_numericas]
-
-dataframe_ufpr04['classe_predita'] = classes_preditas
+dataframe_ufpr05['classe_predita'] = classes_preditas
 
 plt.figure(figsize=(15, 15))
-plt.title("Dataset UFPR04", fontsize='25')
+plt.title("Dataset UFPR05", fontsize='25')
 for i in range(9):
-    caminho_imagem = dataframe_ufpr04.iloc[i]['caminho_imagem']
+    caminho_imagem = dataframe_ufpr05.iloc[i]['caminho_imagem']
     imagem = Image.open(caminho_imagem)
     plt.subplot(3, 3, i + 1)
     plt.xticks([])
     plt.yticks([])
     plt.grid(False)
     plt.imshow(imagem)
-    plt.xlabel(dataframe_ufpr04.iloc[i]["classe_predita"], fontsize=14)
+    plt.xlabel(dataframe_ufpr05.iloc[i]["classe_predita"], fontsize=14)
 plt.show()
 
-acertos = (dataframe_ufpr04['classe_predita'] == dataframe_ufpr04['classe']).sum()
-total = len(dataframe_ufpr04)
+acertos = (dataframe_ufpr05['classe_predita'] == dataframe_ufpr05['classe']).sum()
+total = len(dataframe_ufpr05)
 porcentagem_acertos = (acertos / total) * 100
 print(f"Porcentagem de acertos: {porcentagem_acertos:.2f}%")
 
-dataframe_ufpr04.to_csv("Datasets/df_ufpr04.csv", index=False)
+dataframe_ufpr05.to_csv("Datasets/df_ufpr05.csv", index=False)
+
+
+
+
 
