@@ -7,6 +7,8 @@ from tensorflow.keras.callbacks import ModelCheckpoint
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense
 from sklearn.model_selection import train_test_split
+from tensorflow.keras.regularizers import l2
+
 
 dataframe = pd.read_csv('Datasets/df_PUC.csv')
 
@@ -69,15 +71,20 @@ teste_generator = teste_dategen.flow_from_dataframe(
 )
 
 # Definir arquitetura do modelo
+from tensorflow.keras.layers import Dropout
+
 modelo_pucpr = Sequential([
     Conv2D(32, (3, 3), activation='relu', input_shape=(img_width, img_height, 3)),
     MaxPooling2D(pool_size=(2, 2)),
+    Dropout(0.25),  # Dropout de 25% após a camada de pooling
     Conv2D(64, (3, 3), activation='relu'),
     MaxPooling2D(pool_size=(2, 2)),
+    Dropout(0.25),  # Dropout de 25% após a camada de pooling
     Conv2D(128, (3, 3), activation='relu'),
     MaxPooling2D(pool_size=(2, 2)),
     Flatten(),
     Dense(128, activation='relu'),
+    #Dropout(0.5),  # Dropout de 50% após a camada densa
     Dense(1, activation='sigmoid')
 ])
 
@@ -85,7 +92,7 @@ modelo_pucpr = Sequential([
 modelo_pucpr.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
 
 #checkpoint
-checkpoint_path = 'weights-improvement-{epoch:02d}-{val_accuracy:.2f}.weights.h5'
+checkpoint_path = 'weights/weights-improvement-{epoch:02d}-{val_accuracy:.2f}.weights.h5'
 cp_callback = ModelCheckpoint(filepath=checkpoint_path, save_weights_only=True, verbose=1)
 
 # Treinar o modelo com validação
@@ -100,3 +107,4 @@ perca, precisao = modelo_pucpr.evaluate(teste_generator)
 print(f'Perda de teste: {perca:.4f}, Precisão de teste: {precisao:.4f}')
 
 modelo_pucpr.save("modelo_pucpr.keras")
+modelo_pucpr.save_weights("weights_pucpr.weights.h5")

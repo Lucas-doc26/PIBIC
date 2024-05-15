@@ -23,7 +23,7 @@ ufpr05_gerador = ufpr05_datagen.flow_from_dataframe(
     shuffle=False
 )
 
-
+modelo_pucpr.load_weights("weights_pucpr.weights.h5")
 predicoes = modelo_pucpr.predict(ufpr05_gerador)
 limiar = 0.5
 classes_preditas_numericas = (predicoes > limiar).astype(int)

@@ -3,7 +3,6 @@ from tensorflow import keras
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from PIL import Image
 import matplotlib.pyplot as plt
-
 modelo_pucpr = keras.models.load_model("modelo_pucpr.keras")
 
 dataframe_ufpr04 = pd.read_csv('Datasets/df_ufpr04.csv')
@@ -22,7 +21,7 @@ ufpr04_gerador = ufpr04_datagen.flow_from_dataframe(
     shuffle=False
 )
 
-
+modelo_pucpr.load_weights("weights_pucpr.weights.h5")
 predicoes = modelo_pucpr.predict(ufpr04_gerador)
 limiar = 0.5
 classes_preditas_numericas = (predicoes > limiar).astype(int)
