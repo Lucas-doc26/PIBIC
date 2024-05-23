@@ -4,7 +4,7 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from PIL import Image
 import matplotlib.pyplot as plt
 
-modelo_pucpr = keras.models.load_model("PIBIC/CNN-Testes/modelo_pucpr.keras")
+modelo_pucpr = keras.models.load_model("PIBIC/CNN-Testes/Modelos-keras/modelo_pucpr.keras")
 
 dataframe_ufpr05 = pd.read_csv('PIBIC/CNN-Testes/Datasets/df_UFPR05.csv')
 
@@ -22,7 +22,7 @@ ufpr05_gerador = ufpr05_datagen.flow_from_dataframe(
     shuffle=False
 )
 
-modelo_pucpr.load_weights("PIBIC/CNN-Testes/weights_pucpr.weights.h5")
+modelo_pucpr.load_weights("PIBIC/CNN-Testes/weights-finais/weights_pucpr.weights.h5")
 predicoes = modelo_pucpr.predict(ufpr05_gerador)
 limiar = 0.5
 classes_preditas_numericas = (predicoes > limiar).astype(int)

@@ -5,7 +5,7 @@ import random
 locais = ['PUC', 'UFPR04', 'UFPR05']
 
 limites = {
-    'PUC': 5000,
+    'PUC': 1000,
     'UFPR04': 1000,
     'UFPR05': 1000
 }
@@ -17,9 +17,13 @@ for local in locais:
     classes = []
     for tempo in tempos:
         sample_dir = os.path.join(
-            r'/home/lucas/Downloads/PKLot/PKLotSegmented',
+            r'/home/lucas/Downloads/PKLot/PKLotSegmented/',
             local, tempo)
         pastas = os.listdir(sample_dir)
+        
+        if not os.path.exists(sample_dir):
+            print(f'Diretório não encontrado: {sample_dir}')
+
         for pasta in pastas:
             todos_arquivos = []
             for class_dir in ['Empty', 'Occupied']:
@@ -29,8 +33,6 @@ for local in locais:
                     for file in os.listdir(full_class_dir):
                         if file.endswith('.jpg'):
                             todos_arquivos.append((os.path.join(full_class_dir, file), class_dir))
-                else:
-                    print(f'Diretório não encontrado: {full_class_dir}')
 
             random.shuffle(todos_arquivos)
 
@@ -55,7 +57,7 @@ for local in locais:
         'classe': classes
     })
 
-    df.to_csv(f'PIBIC/CNN-estacionamento/Datasets/df_{local}.csv', index=False)
+    df.to_csv(f'PIBIC/CNN-Testes/Datasets/df_{local}.csv', index=False)
 
     print(f'DataFrame do local {local}:')
     print(df.head())

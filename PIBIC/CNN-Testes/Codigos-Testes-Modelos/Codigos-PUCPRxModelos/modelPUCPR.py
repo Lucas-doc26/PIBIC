@@ -113,5 +113,5 @@ history = modelo_pucpr.fit(
 
 perca, precisao = modelo_pucpr.evaluate(teste_generator)
 print(f'Perda de teste: {perca:.4f}, Precisão de teste: {precisao:.4f}')
-modelo_pucpr.save("PIBIC/CNN-Testes/modelo_pucpr.keras")
-modelo_pucpr.save_weights("PIBIC/CNN-Testes/weights_pucpr.weights.h5")
+modelo_pucpr.save("PIBIC/CNN-Testes/Modelos-keras/modelo_pucpr.keras")
+modelo_pucpr.save_weights("PIBIC/CNN-Testes/weights-finais/weights_pucpr.weights.h5")
