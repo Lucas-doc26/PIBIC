@@ -8,15 +8,14 @@ import matplotlib.pyplot as plt
 modeloPUCPR = keras.models.load_model("PIBIC/CNN-Testes/Modelos-keras/PUCPR_mobilenetv3.keras")
 modeloPUCPR.load_weights('PIBIC/CNN-Testes/weights-finais/PUCPR_mobilenetv3.h5')
 
-modeloPUCPRConv2 = keras.models.load_model("PIBIC/CNN-Testes/Modelos-keras/PUCPR_2Conv_mobilenetv3.keras")
-modeloPUCPRConv2 = keras.models.load_model("PIBIC/CNN-Testes/Modelos-keras/PUCPR_2Conv_mobilenetv3.keras")
-
+#modeloPUCPRConv2 = keras.models.load_model("PIBIC/CNN-Testes/Modelos-keras/PUCPR_mobilenetv3_2.keras")
+#modeloPUCPRConv2.load_weights('PIBIC/CNN-Testes/weights-finais/PUCPR_mobilenetv3_2.h5')
 
 modeloUFPR04 = keras.models.load_model("PIBIC/CNN-Testes/Modelos-keras/UFPR04_mobilenetv3.keras")
 modeloUFPR04.load_weights('PIBIC/CNN-Testes/weights-finais/UFPR04_mobilenetv3.h5')
 
 modeloUFPR05 = keras.models.load_model("PIBIC/CNN-Testes/Modelos-keras/UFPR05_mobilenetv3.keras")
-modeloUFPR05.load_weights('PIBIC/CNN-Testes/weights-finais/UFPR05_mobilenetv3.h5')
+modeloUFPR05.load_weights('PIBIC/CNN-Testes/weights-finais/UFPR04_mobilenetv3.h5')
 
 dataframePUCPR = pd.read_csv('PIBIC/CNN-Testes/Datasets/df_PUCPR_Teste.csv')
 dataframeUFPR04 = pd.read_csv('PIBIC/CNN-Testes/Datasets/df_UFPR04.csv')
@@ -64,43 +63,8 @@ def modeloBaseContraTeste(modeloBase:keras, dataframeTeste:pd.DataFrame, nomeCon
     plt.figtext(0.5, 0.01, f"Porcentagem de acertos: {porcentagem_acertos:.2f} %", ha='center', fontsize=14)
     plt.show()"""
 
-    return porcentagem_acertos
-
-"""modeloBaseContraTeste(modeloPUCPR, dataframePUCPR, 'PUCPR X PUCPR')
-modeloBaseContraTeste(modeloPUCPR, dataframeUFPR04, 'PUCPR X UFPR04')
-modeloBaseContraTeste(modeloPUCPR, dataframeUFPR05, 'PUCPR X UFPR05')
-
-modeloBaseContraTeste(modeloUFPR04, dataframePUCPR, 'UFPR04 x PUCPR')
-modeloBaseContraTeste(modeloUFPR04, dataframeUFPR04, 'UFPR04 x UFPR04')
-modeloBaseContraTeste(modeloUFPR04, dataframeUFPR05, 'UFPR04 x UFPR05')
-
-modeloBaseContraTeste(modeloUFPR05, dataframePUCPR, 'UFPR05 x PUCPR')
-modeloBaseContraTeste(modeloUFPR05, dataframeUFPR04, 'UFPR05 x UFPR04')
-modeloBaseContraTeste(modeloUFPR05, dataframeUFPR05, 'UFPR05 x UFPR05')"""
-
-"""tabela = [[None for _ in range(3)] for _ in range(3)]
-
-tabela[0][0] = modeloBaseContraTeste(modeloPUCPR, dataframePUCPR, 'PUCPR X PUCPR')
-tabela[0][1] = modeloBaseContraTeste(modeloPUCPR, dataframeUFPR04, 'PUCPR X UFPR04')
-tabela[0][2] = modeloBaseContraTeste(modeloPUCPR, dataframeUFPR05, 'PUCPR X UFPR05')
-
-tabela[1][0] = modeloBaseContraTeste(modeloUFPR04, dataframePUCPR, 'UFPR04 X PUCPR')
-tabela[1][1] = modeloBaseContraTeste(modeloUFPR04, dataframeUFPR04, 'UFPR04 X UFPR04')
-tabela[1][2] = modeloBaseContraTeste(modeloUFPR04, dataframeUFPR05, 'UFPR04 X UFPR05')
-
-tabela[2][0] = modeloBaseContraTeste(modeloUFPR05, dataframePUCPR, 'UFPR05 X PUCPR')
-tabela[2][1] = modeloBaseContraTeste(modeloUFPR05, dataframeUFPR04, 'UFPR05 X UFPR04')
-tabela[2][2] = modeloBaseContraTeste(modeloUFPR05, dataframeUFPR05, 'UFPR05 X UFPR05')
-
-print('PUCPR, UFPR04, UFPR05')
-for i in range(len(tabela)):
-    print(tabela[i])
-"""
 
 modeloBaseContraTeste(modeloPUCPR, dataframePUCPR, 'PUCPR X PUCPR')
 modeloBaseContraTeste(modeloPUCPR, dataframeUFPR04, 'PUCPR X UFPR04')
 modeloBaseContraTeste(modeloPUCPR, dataframeUFPR05, 'PUCPR X UFPR05')
 
-modeloBaseContraTeste(modeloPUCPRConv2, dataframePUCPR, 'PUCPR Conv2 X PUCPR')
-modeloBaseContraTeste(modeloPUCPRConv2, dataframeUFPR04, 'PUCPR Conv2 X UFPR04')
-modeloBaseContraTeste(modeloPUCPRConv2, dataframeUFPR05, 'PUCPR Conv2 X UFPR05')

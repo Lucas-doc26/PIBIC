@@ -9,6 +9,8 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Conv2D, GlobalAveragePooling2D, MaxPooling2D, Flatten, Dense, Dropout
 from tensorflow.keras.applications import MobileNetV3Small
 from sklearn.model_selection import train_test_split
+from tensorflow.keras.optimizers import Adam
+
 
 os.environ["CUDNN_PATH"] = "/home/lucas/Documents/PIBIC/CNN-testes/.venv/lib/python3.11/site-packages/nvidia/cudnn"
 os.environ["LD_LIBRARY_PATH"] = "$CUDNN_PATH:$LD_LIBRARY_PATH"
@@ -31,89 +33,11 @@ def geradorModelosMobileNetV3(caminho:str, nomeModelo:str):
     img_width, img_height = 224, 224  # Recomendado para MobileNetV3
     batch_size = 32
 
-    treino_datagen = ImageDataGenerator(rescale=1./255)
-    validacao_datagen = ImageDataGenerator(rescale=1./255)
-    teste_dategen = ImageDataGenerator(rescale=1./255)
+    preprocess_input = tf.keras.applications.mobilenet_v2.preprocess_input
 
-    treino_gerador = treino_datagen.flow_from_dataframe(
-    dataframe=treino,
-    x_col='caminho_imagem',
-    y_col='classe',
-    target_size=(img_width, img_height),
-    batch_size=batch_size,
-    class_mode='binary'
-    )
-
-    validacao_gerador = validacao_datagen.flow_from_dataframe(
-        dataframe=validacao,
-        x_col='caminho_imagem',
-        y_col='classe',
-        target_size=(img_width, img_height),
-        batch_size=batch_size,
-        class_mode='binary'
-    )
-
-    teste_gerador = teste_dategen.flow_from_dataframe(
-        dataframe=teste,
-        x_col='caminho_imagem',
-        y_col='classe',
-        target_size=(img_width, img_height),
-        batch_size=batch_size,
-        class_mode='binary'
-    )
-
-    base_modelo = MobileNetV3Small(weights='imagenet', include_top=False, input_shape=(img_width, img_height, 3))
-
-    base_modelo.trainable = False
-
-    # Adicionar as camadas Fully-Connected
-    model = Sequential([
-        base_modelo,
-        GlobalAveragePooling2D(),
-        Dense(128, activation='relu'),
-        Dropout(0.25),
-        Dense(1, activation='sigmoid')
-    ])
-
-    base_learning_rate = 0.0001
-    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=base_learning_rate),
-                loss=tf.keras.losses.BinaryCrossentropy(from_logits=True),
-                metrics=['accuracy'])
-    model.summary(show_trainable = True)
-    
-
-    history = model.fit(
-        treino_gerador,
-        epochs=10,
-        validation_data=validacao_gerador
-    )
-
-    perca, precisao = model.evaluate(teste_gerador)
-    print(f'{nomeModelo} - Perda de teste: {perca:.4f}, Precisão de teste: {precisao:.4f}')
-
-    model.save(f"PIBIC/CNN-Testes/Modelos-keras/{nomeModelo}_mobilenetv3.keras")
-    model.save_weights(f"PIBIC/CNN-Testes/weights-finais/{nomeModelo}_mobilenetv3.h5")
-
-def geradorModelosConvMobileNetV3(caminho:str, nomeModelo:str):
-
-    """
-    Gerador de modelo MobilenetV3. 
-
-    :param caminho: string
-    :param nomeModelo: string
-
-    :return Salva o modelo como nomeModelo.keras :
-    """
-    dataframe = pd.read_csv(caminho)
-    treino, teste = train_test_split(dataframe, test_size=0.2, random_state=42)
-    treino, validacao = train_test_split(treino, test_size=0.25, random_state=42)
-
-    img_width, img_height = 224, 224  # Recomendado para MobileNetV3
-    batch_size = 32
-
-    treino_datagen = ImageDataGenerator(rescale=1./255)
-    validacao_datagen = ImageDataGenerator(rescale=1./255)
-    teste_dategen = ImageDataGenerator(rescale=1./255)
+    treino_datagen = ImageDataGenerator(rescale=1./127.5)
+    validacao_datagen = ImageDataGenerator(rescale=1./127.5)
+    teste_dategen = ImageDataGenerator(rescale=1./127.5)
 
     treino_gerador = treino_datagen.flow_from_dataframe(
         dataframe=treino,
@@ -142,32 +66,46 @@ def geradorModelosConvMobileNetV3(caminho:str, nomeModelo:str):
         class_mode='binary'
     )
 
+    data_augmentation = tf.keras.Sequential([
+        tf.keras.layers.RandomFlip('horizontal'),
+        tf.keras.layers.RandomRotation(0.2),
+        ])
+
     base_modelo = MobileNetV3Small(weights='imagenet', include_top=False, input_shape=(img_width, img_height, 3))
 
-    # Fine-tune from this layer onwards
-    fine_tune_at = 2
+    image_batch, label_batch = next(iter(treino_gerador))
+    feature_batch = base_modelo(image_batch)
 
-    # Freeze all the layers before the `fine_tune_at` layer
-    for layer in base_modelo.layers[:-fine_tune_at]:
-        layer.trainable = False
+    global_average_layer = tf.keras.layers.GlobalAveragePooling2D()
+    feature_batch_average = global_average_layer(feature_batch)
+    print(feature_batch_average.shape)
 
-    # Adicionar as camadas Fully-Connected
-    model = Sequential([
-        base_modelo,
-        GlobalAveragePooling2D(),
-        Dense(128, activation='relu'),
-        Dropout(0.25),  # Dropout de 25% após a camada de pooling
-        Dense(1, activation='sigmoid')
-    ])
+    base_modelo.trainable = False 
+
+    global_average_layer = tf.keras.layers.GlobalAveragePooling2D()
+    feature_batch_average = global_average_layer(feature_batch)
+
+    print(feature_batch_average.shape)
+
+    prediction_layer = tf.keras.layers.Dense(1)
+    prediction_batch = prediction_layer(feature_batch_average)
+    print(prediction_batch.shape)
+
+    inputs = tf.keras.Input(shape=(224, 224, 3))
+    x = data_augmentation(inputs)
+    x = preprocess_input(x)
+    x = base_modelo(x, training=False)
+    x = global_average_layer(x)
+    x = tf.keras.layers.Dropout(0.2)(x)
+    outputs = prediction_layer(x)
+    model = tf.keras.Model(inputs, outputs)
 
     base_learning_rate = 0.0001
     model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=base_learning_rate),
-                loss=tf.keras.losses.BinaryCrossentropy(from_logits=True),
-                metrics=['accuracy'])
-    model.summary(show_trainable = True)
+              loss=tf.keras.losses.BinaryCrossentropy(from_logits=True),
+              metrics=['accuracy'])
     
-
-    history = model.fit(
+    model.fit(
         treino_gerador,
         epochs=10,
         validation_data=validacao_gerador
@@ -176,10 +114,139 @@ def geradorModelosConvMobileNetV3(caminho:str, nomeModelo:str):
     perda, precisao = model.evaluate(teste_gerador)
     print(f'{nomeModelo} - Perda de teste: {perda:.4f}, Precisão de teste: {precisao:.4f}')
 
-    model.save(f"{nomeModelo}_mobilenetv3.h5")
+    model.save(f"PIBIC/CNN-Testes/Modelos-keras/{nomeModelo}_mobilenetv3_2.keras")
+    model.save_weights(f"PIBIC/CNN-Testes/weights-finais/{nomeModelo}_mobilenetv3_2.h5")
+def geradorModelosConvMobileNetV3(caminho:str, nomeModelo:str):
 
-geradorModelosMobileNetV3('PIBIC/CNN-Testes/Datasets/df_PUC.csv', 'PUCPR')
-print("\n\n\n\n")
+    """
+    Gerador de modelo MobilenetV3. 
+
+    :param caminho: string
+    :param nomeModelo: string
+
+    :return Salva o modelo como nomeModelo.keras :
+    """
+    dataframe = pd.read_csv(caminho)
+    treino, teste = train_test_split(dataframe, test_size=0.2, random_state=42)
+    treino, validacao = train_test_split(treino, test_size=0.25, random_state=42)
+
+    img_width, img_height = 224, 224  # Recomendado para MobileNetV3
+    batch_size = 32
+
+    preprocess_input = tf.keras.applications.mobilenet_v2.preprocess_input
+
+    treino_datagen = ImageDataGenerator(rescale=1./127.5)
+    validacao_datagen = ImageDataGenerator(rescale=1./127.5)
+    teste_dategen = ImageDataGenerator(rescale=1./127.5)
+
+    treino_gerador = treino_datagen.flow_from_dataframe(
+        dataframe=treino,
+        x_col='caminho_imagem',
+        y_col='classe',
+        target_size=(img_width, img_height),
+        batch_size=batch_size,
+        class_mode='binary'
+    )
+
+    validacao_gerador = validacao_datagen.flow_from_dataframe(
+        dataframe=validacao,
+        x_col='caminho_imagem',
+        y_col='classe',
+        target_sizgeradorModelosConvMobileNetV3e=(img_width, img_height),
+        batch_size=batch_size,
+        class_mode='binary'
+    )
+
+    teste_gerador = teste_dategen.flow_from_dataframe(
+        dataframe=teste,
+        x_col='caminho_imagem',
+        y_col='classe',
+        target_size=(img_width, img_height),
+        batch_size=batch_size,
+        class_mode='binary'
+    )
+
+    data_augmentation = tf.keras.Sequential([
+        tf.keras.layers.RandomFlip('horizontal'),
+        tf.keras.layers.RandomRotation(0.2),
+        ])
+
+    base_modelo = MobileNetV3Small(weights='imagenet', include_top=False, input_shape=(img_width, img_height, 3))
+
+    image_batch, label_batch = next(iter(treino_gerador))
+    feature_batch = base_modelo(image_batch)
+
+    global_average_layer = tf.keras.layers.GlobalAveragePooling2D()
+    feature_batch_average = global_average_layer(feature_batch)
+    print(feature_batch_average.shape)
+
+    base_modelo.trainable = True
+
+    # Encontrar todas as camadas convolucionais
+    conv_layers = [layer for layer in base_modelo.layers if isinstance(layer, tf.keras.layers.Conv2D)]
+
+    # Descongelar as últimas duas camadas convolucionais
+    if len(conv_layers) >= 2:
+        for layer in conv_layers[-2:]:
+            layer.trainable = True
+            print(f"Camada {layer.name} está treinável:", layer.trainable)
+
+    # Congelar todas as outras camadas convolucionais
+    for layer in base_modelo.layers:
+        if isinstance(layer, tf.keras.layers.Conv2D) and layer not in conv_layers[-2:]:
+            layer.trainable = False
+
+    global_average_layer = tf.keras.layers.GlobalAveragePooling2D()
+    feature_batch_average = global_average_layer(feature_batch)
+
+    print(feature_batch_average.shape)
+
+    prediction_layer = tf.keras.layers.Dense(1)
+    prediction_batch = prediction_layer(feature_batch_average)
+    print(prediction_batch.shape)
+
+    inputs = tf.keras.Input(shape=(224, 224, 3))
+    x = data_augmentation(inputs)
+    x = preprocess_input(x)
+    x = base_modelo(x, training=False)
+    x = global_average_layer(x)
+    x = tf.keras.layers.Dropout(0.2)(x)
+    outputs = prediction_layer(x)
+    model = tf.keras.Model(inputs, outputs)
+
+    """model = Sequential([
+        base_modelo,
+        GlobalAveragePooling2D(),
+        Dense(128, activation='relu'),
+        Dense(1, activation='sigmoid')
+    ])"""
+
+    base_learning_rate = 0.0001
+    model.compile(loss=tf.keras.losses.BinaryCrossentropy(from_logits=False),
+              optimizer = tf.keras.optimizers.RMSprop(learning_rate=base_learning_rate),
+              metrics=['accuracy'])
+
+    model.summary()
+
+    len(model.trainable_variables)
+
+    model.fit(
+        treino_gerador,
+        epochs=10,
+        validation_data=validacao_gerador
+    )
+
+    perda, precisao = model.evaluate(teste_gerador)
+    print(f'{nomeModelo} - Perda de teste: {perda:.4f}, Precisão de teste: {precisao:.4f}')
+
+    model.save(f"PIBIC/CNN-Testes/Modelos-keras/{nomeModelo}_mobilenetv3_2.keras")
+    model.save_weights(f"PIBIC/CNN-Testes/weights-finais/{nomeModelo}_mobilenetv3_2.h5")
+
+
 geradorModelosConvMobileNetV3('PIBIC/CNN-Testes/Datasets/df_PUC.csv', 'PUCPR')
-#geradorModelosMobileNetV3('PIBIC/CNN-Testes/Datasets/df_UFPR04.csv', 'UFPR04')
-#geradorModelosMobileNetV3('PIBIC/CNN-Testes/Datasets/df_UFPR05.csv', 'UFPR05')
+geradorModelosConvMobileNetV3('PIBIC/CNN-Testes/Datasets/df_UFPR04.csv', 'UFPR04')
+geradorModelosConvMobileNetV3('PIBIC/CNN-Testes/Datasets/df_UFPR05.csv', 'UFPR05')
+#print("\n\n\n\n")
+geradorModelosMobileNetV3('PIBIC/CNN-Testes/Datasets/df_PUC.csv', 'PUCPR')
+geradorModelosMobileNetV3('PIBIC/CNN-Testes/Datasets/df_UFPR04.csv', 'UFPR04')
+geradorModelosMobileNetV3('PIBIC/CNN-Testes/Datasets/df_UFPR05.csv', 'UFPR05')
