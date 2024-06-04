@@ -81,6 +81,11 @@ def geradorModelosMobileNetV3(caminho:str, nomeModelo:str):
     print(feature_batch_average.shape)
 
     base_modelo.trainable = False 
+    print("Number of layers in the base model: ", len(base_modelo.layers))
+
+    print("Camadas treináveis:")
+    for layer in base_modelo.layers:
+        print(layer.name, layer.trainable)
 
     global_average_layer = tf.keras.layers.GlobalAveragePooling2D()
     feature_batch_average = global_average_layer(feature_batch)
@@ -96,7 +101,7 @@ def geradorModelosMobileNetV3(caminho:str, nomeModelo:str):
     x = preprocess_input(x)
     x = base_modelo(x, training=False)
     x = global_average_layer(x)
-    x = tf.keras.layers.Dropout(0.2)(x)
+    #x = tf.keras.layers.Dropout(0.2)(x)
     outputs = prediction_layer(x)
     model = tf.keras.Model(inputs, outputs)
 
@@ -105,9 +110,15 @@ def geradorModelosMobileNetV3(caminho:str, nomeModelo:str):
               loss=tf.keras.losses.BinaryCrossentropy(from_logits=True),
               metrics=['accuracy'])
     
-    model.fit(
+    model.summary()
+
+    checkpoint_path = 'PIBIC/CNN-Testes/weights/weights-improvement-{epoch:02d}-{val_accuracy:.2f}.weights.h5'
+    cp_callback = ModelCheckpoint(filepath=checkpoint_path, save_weights_only=True, 
+                                  monitor='val_accuracy', mode='max', save_best_only=True, verbose=1)
+    history = model.fit(
         treino_gerador,
         epochs=10,
+        callbacks=[cp_callback],
         validation_data=validacao_gerador
     )
 
@@ -116,6 +127,7 @@ def geradorModelosMobileNetV3(caminho:str, nomeModelo:str):
 
     model.save(f"PIBIC/CNN-Testes/Modelos-keras/{nomeModelo}_mobilenetv3_2.keras")
     model.save_weights(f"PIBIC/CNN-Testes/weights-finais/{nomeModelo}_mobilenetv3_2.h5")
+    
 def geradorModelosConvMobileNetV3(caminho:str, nomeModelo:str):
 
     """
@@ -133,12 +145,12 @@ def geradorModelosConvMobileNetV3(caminho:str, nomeModelo:str):
     img_width, img_height = 224, 224  # Recomendado para MobileNetV3
     batch_size = 32
 
-    preprocess_input = tf.keras.applications.mobilenet_v2.preprocess_input
+    preprocess_input = tf.keras.applications.mobilenet_v3.preprocess_input
 
-    treino_datagen = ImageDataGenerator(rescale=1./127.5)
-    validacao_datagen = ImageDataGenerator(rescale=1./127.5)
-    teste_dategen = ImageDataGenerator(rescale=1./127.5)
-
+    treino_datagen = ImageDataGenerator(preprocessing_function=preprocess_input)
+    validacao_datagen = ImageDataGenerator(preprocessing_function=preprocess_input)
+    teste_datagen = ImageDataGenerator(preprocessing_function=preprocess_input)
+    
     treino_gerador = treino_datagen.flow_from_dataframe(
         dataframe=treino,
         x_col='caminho_imagem',
@@ -157,7 +169,7 @@ def geradorModelosConvMobileNetV3(caminho:str, nomeModelo:str):
         class_mode='binary'
     )
 
-    teste_gerador = teste_dategen.flow_from_dataframe(
+    teste_gerador = teste_datagen.flow_from_dataframe(
         dataframe=teste,
         x_col='caminho_imagem',
         y_col='classe',
@@ -176,25 +188,7 @@ def geradorModelosConvMobileNetV3(caminho:str, nomeModelo:str):
     image_batch, label_batch = next(iter(treino_gerador))
     feature_batch = base_modelo(image_batch)
 
-    global_average_layer = tf.keras.layers.GlobalAveragePooling2D()
-    feature_batch_average = global_average_layer(feature_batch)
-    print(feature_batch_average.shape)
-
-    base_modelo.trainable = True
-
-    # Encontrar todas as camadas convolucionais
-    conv_layers = [layer for layer in base_modelo.layers if isinstance(layer, tf.keras.layers.Conv2D)]
-
-    # Descongelar as últimas duas camadas convolucionais
-    if len(conv_layers) >= 2:
-        for layer in conv_layers[-2:]:
-            layer.trainable = True
-            print(f"Camada {layer.name} está treinável:", layer.trainable)
-
-    # Congelar todas as outras camadas convolucionais
-    for layer in base_modelo.layers:
-        if isinstance(layer, tf.keras.layers.Conv2D) and layer not in conv_layers[-2:]:
-            layer.trainable = False
+    base_modelo.trainable = False 
 
     global_average_layer = tf.keras.layers.GlobalAveragePooling2D()
     feature_batch_average = global_average_layer(feature_batch)
@@ -210,31 +204,59 @@ def geradorModelosConvMobileNetV3(caminho:str, nomeModelo:str):
     x = preprocess_input(x)
     x = base_modelo(x, training=False)
     x = global_average_layer(x)
-    x = tf.keras.layers.Dropout(0.2)(x)
+    #x = tf.keras.layers.Dropout(0.2)(x)
     outputs = prediction_layer(x)
     model = tf.keras.Model(inputs, outputs)
 
-    """model = Sequential([
-        base_modelo,
-        GlobalAveragePooling2D(),
-        Dense(128, activation='relu'),
-        Dense(1, activation='sigmoid')
-    ])"""
-
     base_learning_rate = 0.0001
-    model.compile(loss=tf.keras.losses.BinaryCrossentropy(from_logits=False),
-              optimizer = tf.keras.optimizers.RMSprop(learning_rate=base_learning_rate),
+    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=base_learning_rate),
+              loss=tf.keras.losses.BinaryCrossentropy(from_logits=True),
               metrics=['accuracy'])
+    
 
-    model.summary()
+    #checkpoint
+    checkpoint_path = 'PIBIC/CNN-Testes/weights/weights-improvement-{epoch:02d}-{val_accuracy:.2f}.weights.h5'
+    cp_callback = ModelCheckpoint(filepath=checkpoint_path, save_weights_only=True, 
+                                  monitor='val_accuracy', mode='max', save_best_only=True, verbose=1)
 
-    len(model.trainable_variables)
-
-    model.fit(
+    history = model.fit(
         treino_gerador,
         epochs=10,
+        callbacks=[cp_callback],
         validation_data=validacao_gerador
     )
+
+    print("Numero de camadas no modelo: ", len(base_modelo.layers))
+
+    # Primeiro, defina todas as camadas para não treináveis
+    for layer in base_modelo.layers:
+        layer.trainable = False
+
+    # Encontre todas as camadas convolucionais no modelo
+    conv_layers = [layer for layer in base_modelo.layers if isinstance(layer, Conv2D)]
+
+    # Em seguida, defina as duas últimas camadas convolucionais para treináveis
+    for layer in conv_layers[-2:]:
+        layer.trainable = True
+
+    # Confira se as camadas estão agora congeladas ou não
+    print("Camdas treináveis depois do fine-tuning:")
+    for layer in base_modelo.layers:
+        print(layer.name, layer.trainable)
+
+
+    model.compile(loss=tf.keras.losses.BinaryCrossentropy(),
+                optimizer = tf.keras.optimizers.RMSprop(learning_rate=base_learning_rate/10),
+                metrics=[tf.keras.metrics.BinaryAccuracy(threshold=0.5, name='accuracy')])
+    
+    model.summary()
+    len(model.trainable_variables)
+
+    history_fine = model.fit(treino_gerador,
+                            epochs=10,
+                            callbacks=[cp_callback],
+                            validation_data=validacao_gerador)
+
 
     perda, precisao = model.evaluate(teste_gerador)
     print(f'{nomeModelo} - Perda de teste: {perda:.4f}, Precisão de teste: {precisao:.4f}')
@@ -246,7 +268,7 @@ def geradorModelosConvMobileNetV3(caminho:str, nomeModelo:str):
 geradorModelosConvMobileNetV3('PIBIC/CNN-Testes/Datasets/df_PUC.csv', 'PUCPR')
 geradorModelosConvMobileNetV3('PIBIC/CNN-Testes/Datasets/df_UFPR04.csv', 'UFPR04')
 geradorModelosConvMobileNetV3('PIBIC/CNN-Testes/Datasets/df_UFPR05.csv', 'UFPR05')
-#print("\n\n\n\n")
+print("\n\n\n\n")
 geradorModelosMobileNetV3('PIBIC/CNN-Testes/Datasets/df_PUC.csv', 'PUCPR')
 geradorModelosMobileNetV3('PIBIC/CNN-Testes/Datasets/df_UFPR04.csv', 'UFPR04')
 geradorModelosMobileNetV3('PIBIC/CNN-Testes/Datasets/df_UFPR05.csv', 'UFPR05')
