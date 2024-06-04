@@ -10,11 +10,33 @@ from tensorflow.keras.layers import Conv2D, GlobalAveragePooling2D, MaxPooling2D
 from tensorflow.keras.applications import MobileNetV3Small
 from sklearn.model_selection import train_test_split
 from tensorflow.keras.optimizers import Adam
+from tensorflow.keras import datasets, layers, models, losses
 
 
 os.environ["CUDNN_PATH"] = "/home/lucas/Documents/PIBIC/CNN-testes/.venv/lib/python3.11/site-packages/nvidia/cudnn"
 os.environ["LD_LIBRARY_PATH"] = "$CUDNN_PATH:$LD_LIBRARY_PATH"
 os.environ["XLA_FLAGS"] = "--xla_gpu_cuda_data_dir=/usr/lib/cuda/"
+
+#Plot a training history
+def plot_history(history):
+  print(history.history.keys())
+  # summarize history for accuracy
+  plt.plot(history.history['accuracy'])
+  plt.plot(history.history['val_accuracy'])
+  plt.title('model accuracy')
+  plt.ylabel('accuracy')
+  plt.xlabel('epoch')
+  plt.legend(['train', 'val'], loc='upper left')
+  plt.show()
+  # summarize history for loss
+  plt.plot(history.history['loss'])
+  plt.plot(history.history['val_loss'])
+  plt.title('model loss')
+  plt.ylabel('loss')
+  plt.xlabel('epoch')
+  plt.legend(['train', 'val'], loc='upper left')
+  plt.show()
+
 
 def geradorModelosMobileNetV3(caminho:str, nomeModelo:str):
 
@@ -42,7 +64,7 @@ def geradorModelosMobileNetV3(caminho:str, nomeModelo:str):
     treino_gerador = treino_datagen.flow_from_dataframe(
         dataframe=treino,
         x_col='caminho_imagem',
-        y_col='classe',
+        y_col='classe', 
         target_size=(img_width, img_height),
         batch_size=batch_size,
         class_mode='binary'
@@ -65,6 +87,9 @@ def geradorModelosMobileNetV3(caminho:str, nomeModelo:str):
         batch_size=batch_size,
         class_mode='binary'
     )
+
+    class_names = treino_gerador.classes
+    num_classes = len(class_names)
 
     data_augmentation = tf.keras.Sequential([
         tf.keras.layers.RandomFlip('horizontal'),
@@ -96,14 +121,11 @@ def geradorModelosMobileNetV3(caminho:str, nomeModelo:str):
     prediction_batch = prediction_layer(feature_batch_average)
     print(prediction_batch.shape)
 
-    inputs = tf.keras.Input(shape=(224, 224, 3))
-    x = data_augmentation(inputs)
-    x = preprocess_input(x)
-    x = base_modelo(x, training=False)
-    x = global_average_layer(x)
-    #x = tf.keras.layers.Dropout(0.2)(x)
-    outputs = prediction_layer(x)
-    model = tf.keras.Model(inputs, outputs)
+    model = Sequential([
+        base_modelo,
+        GlobalAveragePooling2D(),
+        Dense(1, activation='sigmoid')
+    ])
 
     base_learning_rate = 0.0001
     model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=base_learning_rate),
@@ -112,15 +134,16 @@ def geradorModelosMobileNetV3(caminho:str, nomeModelo:str):
     
     model.summary()
 
-    checkpoint_path = 'PIBIC/CNN-Testes/weights/weights-improvement-{epoch:02d}-{val_accuracy:.2f}.weights.h5'
+    """checkpoint_path = 'PIBIC/CNN-Testes/weights/weights-improvement-{epoch:02d}-{val_accuracy:.2f}.weights.h5'
     cp_callback = ModelCheckpoint(filepath=checkpoint_path, save_weights_only=True, 
-                                  monitor='val_accuracy', mode='max', save_best_only=True, verbose=1)
+                                  monitor='val_accuracy', mode='max', save_best_only=True, verbose=1)"""
     history = model.fit(
         treino_gerador,
         epochs=10,
-        callbacks=[cp_callback],
         validation_data=validacao_gerador
     )
+
+    plot_history(history)
 
     perda, precisao = model.evaluate(teste_gerador)
     print(f'{nomeModelo} - Perda de teste: {perda:.4f}, Precisão de teste: {precisao:.4f}')
@@ -256,6 +279,8 @@ def geradorModelosConvMobileNetV3(caminho:str, nomeModelo:str):
                             epochs=10,
                             callbacks=[cp_callback],
                             validation_data=validacao_gerador)
+    
+    plot_history(history_fine)
 
 
     perda, precisao = model.evaluate(teste_gerador)
@@ -265,9 +290,9 @@ def geradorModelosConvMobileNetV3(caminho:str, nomeModelo:str):
     model.save_weights(f"PIBIC/CNN-Testes/weights-finais/{nomeModelo}_mobilenetv3_2.h5")
 
 
-geradorModelosConvMobileNetV3('PIBIC/CNN-Testes/Datasets/df_PUC.csv', 'PUCPR')
+"""geradorModelosConvMobileNetV3('PIBIC/CNN-Testes/Datasets/df_PUC.csv', 'PUCPR')
 geradorModelosConvMobileNetV3('PIBIC/CNN-Testes/Datasets/df_UFPR04.csv', 'UFPR04')
-geradorModelosConvMobileNetV3('PIBIC/CNN-Testes/Datasets/df_UFPR05.csv', 'UFPR05')
+geradorModelosConvMobileNetV3('PIBIC/CNN-Testes/Datasets/df_UFPR05.csv', 'UFPR05')"""
 print("\n\n\n\n")
 geradorModelosMobileNetV3('PIBIC/CNN-Testes/Datasets/df_PUC.csv', 'PUCPR')
 geradorModelosMobileNetV3('PIBIC/CNN-Testes/Datasets/df_UFPR04.csv', 'UFPR04')
