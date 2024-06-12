@@ -32,11 +32,11 @@ def segmentadando_datasets(quantidade_PUC:int=None, quantidade_UFPR04:int=None, 
         classes = []
         for tempo in tempos:
             sample_dir = os.path.join(
-                r'C:\Users\lucaa\Downloads\PKLot\PKLot\PKLotSegmented',
+                 r'/home/lucas/Downloads/PKLot/PKLotSegmented/',
                 local, tempo)
             pastas = os.listdir(sample_dir)
             
-            if not os.path.exists(sample_dir):
+            if not os.path.exists(sample_dir)   :
                 print(f'Diretório não encontrado: {sample_dir}')
 
             for pasta in pastas:
@@ -90,7 +90,7 @@ def segmentadando_datasets(quantidade_PUC:int=None, quantidade_UFPR04:int=None, 
 #dataframePuc1, dataframeUFPR041, dataframeUFPR051 = segmentadando_datasets()
 #dataframePuc, dataframeUFPR04, dataframeUFPR05 = segmentadando_datasets(1000, 1000, 1000)
 
-
+    
 def csv_para_dicionario(caminho):
     # Dicionário para armazenar os dados do CSV
     dados = {}
@@ -114,4 +114,5 @@ def csv_para_dicionario(caminho):
 print(dicionario)
 print(dicionario[1])"""
 
-
+df = pd.read_csv('Datasets_csv/df_PUC.csv')
+print(df.head())

@@ -33,10 +33,8 @@ def cria_modelo_mobileNetV3(trainable_conv:int):
     modelo = Sequential([
         base_modelo,
         Flatten(),
-        Dense(512, activation='relu'),  # Aumentando o número de unidades na primeira camada densa
-        Dense(256, activation='relu'),  # Outra camada densa
-        Dropout(0.5),  # Mais dropout
-        Dense(128, activation='relu'),  # Reduzindo o número de unidades para uma representação mais compacta
+        Dense(256, activation='relu'),  
+        Dense(128, activation='relu'),
         Dense(2, activation='softmax')
     ])
 

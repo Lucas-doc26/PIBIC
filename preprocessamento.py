@@ -53,7 +53,7 @@ def preprocessamento(caminho:str) -> List[tuple]:
 
 def preprocessamento_dataframe_teste(caminho:str):
     """
-    Retorna o dataFrame.csv e o dataFrame gerado
+    Retorna o dataFrame lido pelo csv e o dataFrame gerado pelo ImageDataGenerator
     """
     
     img_width, img_height = 256, 256

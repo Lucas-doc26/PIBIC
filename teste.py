@@ -11,21 +11,34 @@ from tensorflow.keras.callbacks import ModelCheckpoint
 from segmentandoDatasets import segmentadando_datasets, csv_para_dicionario
 from visualizacao import *
 from preprocessamento import preprocessamento, preprocessamento_dataframe_teste
-from modelos import *
-from TransferLearning import teste_modelos
+from modelos import carrega_modelo
 
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 
+modelo_PUC_Congelado = carrega_modelo('Modelos_keras/PUC_Congelado_mobilenetv3.keras','weights_finais/PUC_Congelado_mobilenetv3.weights.h5')
 
-PUCPR_dic = csv_para_dicionario('Datasets_csv\df_PUC.csv')
-teste_modelos(PUCPR_dic, 0)
+_, _, dataset_PUC = preprocessamento("Datasets_csv/df_PUC.csv")
 
-ufpr = csv_para_dicionario('Datasets_csv/df_UFPR04.csv')
-_, dataset_1 = preprocessamento_dataframe_teste(ufpr)
+x_val, y_val = next(dataset_PUC)
 
-modelo = carrega_modelo('Modelos_keras/PUC_Congelado_mobilenetv3.keras','weights_finais/PUC_Congelado_mobilenetv3.weights.h5')
-predicoes = modelo.predict(dataset_1)
+print(x_val, y_val)
+
+predicoes = modelo_PUC_Congelado.predict(dataset_PUC)
+#print(predicoes)
 predicoes = np.argmax(predicoes, axis=1)
-print(predicoes)
+#print(predicoes)
+
+conf_matrix = confusion_matrix(dataset_PUC.labels, predicoes)
+
+"""print(conf_matrix)"""
+
+plt.figure(figsize=(10, 8))
+sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='Blues', 
+            xticklabels=['empty', 'occupied'], 
+            yticklabels=['empty', 'occupied'])
+plt.xlabel('Predito')
+plt.ylabel('Verdadeiro')
+plt.title('Matriz de Confusão')
+plt.show()
 
 

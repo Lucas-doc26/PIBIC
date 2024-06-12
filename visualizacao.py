@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 from PIL import Image
 import seaborn as sns
 from sklearn.metrics import confusion_matrix
+import pandas
 
 def plot_history(history):
   """
@@ -35,7 +36,7 @@ def plot_imagens_com_csv(dataframe, img_por_coluna):
     """
     _, axs = plt.subplots(img_por_coluna, img_por_coluna, figsize=(10, 10))
 
-    for index, linha in dataframe.iterrows():
+    for index, linha in dataframe.take(9):
         if index >= img_por_coluna**2:
             break  
         image_path = linha['caminho_imagem']
@@ -49,6 +50,31 @@ def plot_imagens_com_csv(dataframe, img_por_coluna):
     plt.tight_layout()
     plt.show()
      
+def plot_imagens_dataframe_gerador(dataframe_gerador, img_por_coluna):
+    """
+    Função para plotar imagens geradas pelo DataFrameGenerator.
+    :param dataframe_gerador: DataFrameIterator contendo as imagens geradas.
+    """
+    _, axs = plt.subplots(img_por_coluna, img_por_coluna, figsize=(10, 10))
+    imagens = img_por_coluna ** 2 
+
+    for i in range(imagens):
+        if i >= imagens:
+            break  
+        batch = next(dataframe_gerador)
+        image = batch[0][0]  
+        label = batch[1][0] 
+        
+        # Normaliza os valores dos pixels para o intervalo [0, 1]
+        image = (image - image.min()) / (image.max() - image.min())
+        
+        axs[i // 3, i % 3].imshow(image)
+        axs[i // 3, i % 3].axis('off')  
+        axs[i // 3, i % 3].set_title(f"Classe: {label}")  # Título da imagem
+
+    plt.tight_layout()
+    plt.show()
+
 def show_sample(dataset):
     dataset = dataset.take(9)
     plt.figure(figsize=(10, 10))
@@ -60,7 +86,7 @@ def show_sample(dataset):
         plt.axis("off")
     plt.show()
 
-def plot_confusion_matrix(y_true, y_pred, labels):
+def plot_confusion_matrix(y_true, y_pred, labels, save_path, title):
     """
     Plota uma matriz de confusão.
 
@@ -69,10 +95,27 @@ def plot_confusion_matrix(y_true, y_pred, labels):
     - y_pred (array): rótulos previstos.
     - labels (list): lista de rótulos das classes.
     """
-    cm = confusion_matrix(y_true, y_pred, labels=labels)
-    plt.figure(figsize=(8, 6))
+    cm = confusion_matrix(y_true, y_pred)
+    plt.figure(figsize=(10, 7))
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=labels, yticklabels=labels)
+    plt.title(title)
+    plt.xlabel('Predicted')
+    plt.ylabel('True')
+    plt.savefig(save_path)
+    plt.close()
+
+def plot_confusion_matrix2(y_true, y_pred, labels):
+    """
+    Plota uma matriz de confusão.
+
+    Args:
+    - y_true (array): rótulos verdadeiros.
+    - y_pred (array): rótulos previstos.
+    - labels (list): lista de rótulos das classes.
+    """
+    cm = confusion_matrix(y_true, y_pred)
+    plt.figure(figsize=(10, 7))
     sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=labels, yticklabels=labels)
     plt.xlabel('Predicted')
-    plt.ylabel('Actual')
-    plt.title('Confusion Matrix')
-    plt.show()
+    plt.ylabel('True')
+    plt.close()
