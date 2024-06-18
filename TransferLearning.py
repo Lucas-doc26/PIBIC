@@ -7,11 +7,12 @@ from PIL import Image
 import tensorflow as tf
 import keras
 import seaborn as sns
+from tensorflow.keras.preprocessing.image import load_img, img_to_array
 from sklearn.metrics import confusion_matrix
 from tensorflow.keras.callbacks import ModelCheckpoint
 from segmentandoDatasets import segmentadando_datasets, csv_para_dicionario
 from visualizacao import plot_confusion_matrix
-from preprocessamento import preprocessamento, preprocessamento_dataframe_teste
+from preprocessamento import preprocessamento, preprocessamento_dataframe_teste, mapear_rotulos_binarios, carregar_e_preprocessar_imagens
 from modelos import carrega_modelo, cria_modelo_mobileNetV3
 
 
@@ -78,8 +79,7 @@ def teste_modelos(caminho:str, num:int):
         for modelos, accuracy in test_results.items():
             print(f"{modelos} - precisão de {accuracy:.3f} ", file=f)
 #Exemplo de criação dos modelos:
-"""
-print("Modelos sem o Fine Tuning:\n")
+"""print("Modelos sem o Fine Tuning:\n")
 teste_modelos('Datasets_csv/df_PUC.csv', 0)
 teste_modelos('Datasets_csv/df_UFPR04.csv', 0)
 teste_modelos('Datasets_csv/df_UFPR05.csv', 0)
@@ -87,31 +87,29 @@ teste_modelos('Datasets_csv/df_UFPR05.csv', 0)
 print("\nModelos com o Fine Tuning:\n")
 teste_modelos('Datasets_csv/df_PUC.csv', 2)
 teste_modelos('Datasets_csv/df_UFPR04.csv', 2)
-teste_modelos('Datasets_csv/df_UFPR05.csv', 2)
-"""
-
+teste_modelos('Datasets_csv/df_UFPR05.csv', 2)"""
 
 def predict_e_matriz_de_confusao():
-    PUC_csv, PUC = preprocessamento_dataframe_teste('Datasets_csv/df_PUC.csv')
-    UFPR04_csv, UFPR04 = preprocessamento_dataframe_teste('Datasets_csv/df_UFPR04.csv')
-    UFPR05_csv, UFPR05 = preprocessamento_dataframe_teste('Datasets_csv/df_UFPR05.csv')
+    PUC_csv, PUC, PUC_df = preprocessamento_dataframe_teste('Datasets_csv/df_PUC.csv')
+    UFPR04_csv, UFPR04, UFPR04_df  = preprocessamento_dataframe_teste('Datasets_csv/df_UFPR04.csv')
+    UFPR05_csv, UFPR05, UFPR05_df = preprocessamento_dataframe_teste('Datasets_csv/df_UFPR05.csv')
 
     modelos = {
-        'PUC_Congelado': r'/home/lucas/PIBIC/Modelos_keras/PUC_Congelado_mobilenetv3.keras',
-        'PUC_Descongelado': r'/home/lucas/PIBIC/Modelos_keras/PUC_Descongelado_mobilenetv3.keras', 
-        'UFPR04_Congelado': r'/home/lucas/PIBIC/Modelos_keras/UFPR04_Congelado_mobilenetv3.keras',
-        'UFPR04_Descongelado': r'/home/lucas/PIBIC/Modelos_keras/UFPR04_Descongelado_mobilenetv3.keras',
-        'UFPR05_Congelado': r'/home/lucas/PIBIC/Modelos_keras/UFPR05_Congelado_mobilenetv3.keras',
-        'UFPR05_Descongelado': r'/home/lucas/PIBIC/Modelos_keras/UFPR05_Descongelado_mobilenetv3.keras',
+        'PUC_Congelado': r'Modelos_keras/PUC_Congelado_mobilenetv3.keras',
+        'PUC_Descongelado': r'Modelos_keras/PUC_Descongelado_mobilenetv3.keras', 
+        'UFPR04_Congelado': r'Modelos_keras/UFPR04_Congelado_mobilenetv3.keras',
+        'UFPR04_Descongelado': r'Modelos_keras/UFPR04_Descongelado_mobilenetv3.keras',
+        'UFPR05_Congelado': r'Modelos_keras/UFPR05_Congelado_mobilenetv3.keras',
+        'UFPR05_Descongelado': r'Modelos_keras/UFPR05_Descongelado_mobilenetv3.keras',
     }
 
     pesos = {
-        'PUC_Congelado': r'/home/lucas/PIBIC/weights_finais/PUC_Congelado_mobilenetv3.weights.h5',
-        'PUC_Descongelado': r'/home/lucas/PIBIC/weights_finais/PUC_Descongelado_mobilenetv3.weights.h5', 
-        'UFPR04_Congelado': r'/home/lucas/PIBIC/weights_finais/UFPR04_Congelado_mobilenetv3.weights.h5',
-        'UFPR04_Descongelado': r'/home/lucas/PIBIC/weights_finais/UFPR04_Descongelado_mobilenetv3.weights.h5',
-        'UFPR05_Congelado': r'/home/lucas/PIBIC/weights_finais/UFPR05_Congelado_mobilenetv3.weights.h5',
-        'UFPR05_Descongelado': r'/home/lucas/PIBIC/weights_finais/UFPR05_Descongelado_mobilenetv3.weights.h5',
+        'PUC_Congelado': r'weights_finais/PUC_Congelado_mobilenetv3.weights.h5',
+        'PUC_Descongelado': r'weights_finais/PUC_Descongelado_mobilenetv3.weights.h5', 
+        'UFPR04_Congelado': r'weights_finais/UFPR04_Congelado_mobilenetv3.weights.h5',
+        'UFPR04_Descongelado': r'weights_finais/UFPR04_Descongelado_mobilenetv3.weights.h5',
+        'UFPR05_Congelado': r'weights_finais/UFPR05_Congelado_mobilenetv3.weights.h5',
+        'UFPR05_Descongelado': r'weights_finais/UFPR05_Descongelado_mobilenetv3.weights.h5',
     }
 
     modelos_carregados = {}
@@ -124,51 +122,46 @@ def predict_e_matriz_de_confusao():
 
         modelos_carregados[modelo_nome] = modelo 
 
-    print(modelos_carregados)
-
     for modelo_nome, modelo in modelos_carregados.items():
-        if 'PUC' in modelo_nome: 
-            y_verdadeiro1 = PUC.classes
-            y_predicao1 = modelo.predict(PUC).argmax(axis=1)
+        for dataset_nome, dataset, dataset_df in [('PUC', PUC, PUC_df), ('UFPR04', UFPR04, UFPR04_df), ('UFPR05', UFPR05, UFPR05_df)]:
+            y_verdadeiro = dataset_df['classe'].values
+            y_binario = mapear_rotulos_binarios(y_verdadeiro) 
 
-            y_verdadeiro2 = UFPR04.classes
-            y_predicao2 = modelo.predict(UFPR04).argmax(axis=1)
+            caminhos_imagens = dataset_df['caminho_imagem'].tolist() 
+            imagens = carregar_e_preprocessar_imagens(caminhos_imagens)
+            y_predicao = modelo.predict(imagens).argmax(axis=1)
 
-            y_verdadeiro3 = UFPR05.classes
-            y_predicao3 = modelo.predict(UFPR05).argmax(axis=1)
-            
-        elif 'UFPR04' in modelo_nome: 
-            y_verdadeiro1 = PUC.classes
-            y_predicao1 = modelo.predict(PUC).argmax(axis=1)
+            labels = ['Empty', 'Occupied']
 
-            y_verdadeiro2 = UFPR04.classes
-            y_predicao2 = modelo.predict(UFPR04).argmax(axis=1)
-            
-            y_verdadeiro3 = UFPR05.classes
-            y_predicao3 = modelo.predict(UFPR05).argmax(axis=1)
+            save_path_matriz = os.path.join('Resultados', 'Matriz_de_confusao', modelo_nome, f'{modelo_nome}_vs_{dataset_nome}_matriz_de_confusao.png')
+            titulo_matriz = f'Matriz de Confusão - {modelo_nome} vs {dataset_nome}'
+            plot_confusion_matrix(y_binario, y_predicao, labels, save_path_matriz, titulo_matriz)
 
-        elif 'UFPR05' in modelo_nome:
-            y_verdadeiro1 = PUC.classes
-            y_predicao1 = modelo.predict(PUC).argmax(axis=1)
+            indices_incorretos = np.where(y_predicao != y_binario)[0]
 
-            y_verdadeiro2 = UFPR04.classes
-            y_predicao2 = modelo.predict(UFPR04).argmax(axis=1)
+            # Limitar a no máximo 9 imagens para plotagem
+            num_imagens_plotadas = min(len(indices_incorretos), 9)
+            indices_plotados = indices_incorretos[:num_imagens_plotadas]
 
-            y_verdadeiro3 = UFPR05.classes
-            y_predicao3 = modelo.predict(UFPR05).argmax(axis=1)
-        
-        labels = ['Empty', 'Occupied'] 
-        save_path = os.path.join(f'Resultados/Matriz_de_confusao/{modelo_nome}/', f'{modelo_nome}_vs_PUC_matriz_de_confusao.png')
-        titulo = f'Matriz de Confusão - {modelo_nome} vs PUC'
-        plot_confusion_matrix(y_verdadeiro1, y_predicao1, labels, save_path, titulo)
+            # Configurar a grade de subplots 3x3
+            fig, axes = plt.subplots(3, 3, figsize=(15, 15))
+            axes = axes.flatten()
 
-        save_path = os.path.join(f'Resultados/Matriz_de_confusao/{modelo_nome}/', f'{modelo_nome}_vs_UFPR04_matriz_de_confusao.png')
-        titulo = f'Matriz de Confusão - {modelo_nome} vs UFPR04'
-        plot_confusion_matrix(y_verdadeiro2, y_predicao2, labels, save_path, titulo)
+            for ax, indice in zip(axes, indices_plotados):
+                img = load_img(caminhos_imagens[indice])
+                ax.imshow(img)
+                ax.set_title(f'Predição: {labels[y_predicao[indice]]}\nReal: {labels[y_binario[indice]]}')
+                ax.axis('off')
 
-        save_path = os.path.join(f'Resultados/Matriz_de_confusao/{modelo_nome}/', f'{modelo_nome}_vs_UFPR05_matriz_de_confusao.png')
-        titulo = f'Matriz de Confusão - {modelo_nome} vs UFPR05'
-        plot_confusion_matrix(y_verdadeiro3, y_predicao3, labels, save_path, titulo)
+            # Remover qualquer eixo vazio
+            for i in range(num_imagens_plotadas, 9):
+                axes[i].axis('off')
+
+            plt.tight_layout()
+            save_path_imgs = os.path.join('Resultados', 'Imagens_Incorretas', modelo_nome, f'{modelo_nome}_vs_{dataset_nome}_imagens_incorretas.png')
+            os.makedirs(os.path.dirname(save_path_imgs), exist_ok=True)
+            plt.savefig(save_path_imgs)
+            plt.close()
 
 # Exemplo: 
 predict_e_matriz_de_confusao()

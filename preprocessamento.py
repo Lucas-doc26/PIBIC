@@ -1,8 +1,10 @@
 import pandas as pd
 import tensorflow as tf
+import numpy as np
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
+from tensorflow.keras.preprocessing.image import load_img, img_to_array
 from typing import List
 
 def preprocessamento(caminho:str) -> List[tuple]:
@@ -11,6 +13,7 @@ def preprocessamento(caminho:str) -> List[tuple]:
     """
     
     dataframe = pd.read_csv(caminho)
+
     treino, teste = train_test_split(dataframe, test_size=0.2, random_state=42)
     treino, validacao = train_test_split(treino, test_size=0.25, random_state=42)
 
@@ -28,7 +31,8 @@ def preprocessamento(caminho:str) -> List[tuple]:
             y_col='classe', 
             target_size=(img_width, img_height),
             batch_size=batch_size,
-            class_mode='binary'
+            class_mode='binary',
+            shuffle=False
         )
 
 
@@ -38,7 +42,8 @@ def preprocessamento(caminho:str) -> List[tuple]:
             y_col='classe',
             target_sizgeradorModelosConvMobileNetV3e=(img_width, img_height),
             batch_size=batch_size,
-            class_mode='binary'
+            class_mode='binary',
+            shuffle=False
         )
 
     teste_gerador = teste_dategen.flow_from_dataframe(
@@ -47,9 +52,10 @@ def preprocessamento(caminho:str) -> List[tuple]:
             y_col='classe',
             target_size=(img_width, img_height),
             batch_size=batch_size,
-            class_mode='binary'
+            class_mode='binary',
+            shuffle=False
         )
-    return treino_gerador, validacao_gerador, teste_gerador
+    return treino_gerador, validacao_gerador, teste_gerador, treino, validacao, teste
 
 def preprocessamento_dataframe_teste(caminho:str):
     """
@@ -70,4 +76,16 @@ def preprocessamento_dataframe_teste(caminho:str):
             class_mode='binary'
         )
     
-    return dataframe, dataframe_gerador
+    return dataframe, dataframe_gerador, dataframe
+
+def carregar_e_preprocessar_imagens(caminhos_imagens, target_size=(256, 256)):
+    imagens = []
+    for caminho in caminhos_imagens:
+        img = load_img(caminho, target_size=target_size)
+        img_array = img_to_array(img)
+        img_array = np.expand_dims(img_array, axis=0)
+        imagens.append(img_array)
+    return np.vstack(imagens)
+
+def mapear_rotulos_binarios(rotulos):
+    return np.array([1 if r == 'Occupied' else 0 for r in rotulos])

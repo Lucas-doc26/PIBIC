@@ -1,52 +1,23 @@
-import tensorflow as tf
-import pandas as pd
-from sklearn.model_selection import train_test_split
-import os
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+import matplotlib.pyplot as plt
+import numpy as np
 
-os.environ["CUDNN_PATH"] = "/home/lucas/Documents/.venv/lib/python3.11/site-packages/nvidia/cudnn"
-os.environ["LD_LIBRARY_PATH"] = "$CUDNN_PATH:$LD_LIBRARY_PATH"
-os.environ["XLA_FLAGS"] = "--xla_gpu_cuda_data_dir=/usr/lib/cuda/"
+# Dados fictícios: rótulos reais e previsões
+y_true = ['empty', 'occupied', 'empty', 'empty', 'occupied', 'occupied', 'empty', 'occupied', 'occupied', 'empty']
+y_pred = ['empty', 'occupied', 'empty', 'occupied', 'occupied', 'empty', 'empty', 'occupied', 'empty', 'occupied']
 
-caminho_arquivo_csv = 'Datasets_csv/df_PUC.csv'
-dados = pd.read_csv(caminho_arquivo_csv)
+# Definir as classes
+classes = ['empty', 'occupied']
 
-print(dados.head())
+# Calcular matriz de confusão
+cm = confusion_matrix(y_true, y_pred, labels=classes)
 
-
-num_epochs = 1  
-shuffle_buffer = 1000 
-label_column = 'classe'  
-
-def carregar_dataset(caminho_arquivo_csv, label_column='classe', batch_size=1, num_epochs=None):
-    dataset = tf.data.experimental.make_csv_dataset(
-        file_pattern=caminho_arquivo_csv,
-        batch_size=batch_size,
-        label_name=label_column,
-        num_epochs=num_epochs,
-    )
-    return dataset
-
-dataset = carregar_dataset(caminho_arquivo_csv, label_column)
-
-num_exemplos = sum(1 for _ in dataset)
-
-print("Número total de exemplos no dataset:", num_exemplos)
-
-
-train_size = int(0.6 * dados.shape[0])  # 60% 
-val_size = int(0.2 * dados.shape[0])    # 20% 
-test_size = dados.shape[0] - train_size - val_size
-
-def split_dataset(dataset, train_size, val_size, test_size):
-    treino_dataset = dataset.take(train_size)
-    val_dataset = dataset.skip(train_size).take(val_size)
-    teste_dataset = dataset.skip(train_size + val_size).take(test_size)
-    
-    return treino_dataset, val_dataset, teste_dataset
-
-treino_dataset, val_dataset, teste_dataset = split_dataset(dataset, train_size, val_size, test_size)
-
-print("Número de exemplos no conjunto de treino:", len(list(treino_dataset)))
-print("Número de exemplos no conjunto de validação:", len(list(val_dataset)))
-print("Número de exemplos no conjunto de teste:", len(list(teste_dataset)))
-
+# Exibir a matriz de confusão
+disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=classes)
+plt.figure(figsize=(8, 6))
+disp.plot(cmap=plt.cm.Blues, values_format='.0f')
+plt.title('Matriz de Confusão')
+plt.xlabel('Predições')
+plt.ylabel('Rótulos Reais')
+plt.grid(False)
+plt.show()

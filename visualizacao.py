@@ -36,7 +36,8 @@ def plot_imagens_com_csv(dataframe, img_por_coluna):
     """
     _, axs = plt.subplots(img_por_coluna, img_por_coluna, figsize=(10, 10))
 
-    for index, linha in dataframe.take(9):
+    # Iterar sobre as linhas do DataFrame
+    for index, linha in dataframe.iterrows():
         if index >= img_por_coluna**2:
             break  
         image_path = linha['caminho_imagem']
@@ -52,25 +53,34 @@ def plot_imagens_com_csv(dataframe, img_por_coluna):
      
 def plot_imagens_dataframe_gerador(dataframe_gerador, img_por_coluna):
     """
-    Função para plotar imagens geradas pelo DataFrameGenerator.
+    Função para plotar imagens geradas pelo DataFrameIterator.
     :param dataframe_gerador: DataFrameIterator contendo as imagens geradas.
+    :param img_por_coluna: Número de imagens por coluna e por linha a serem plotadas.
     """
-    _, axs = plt.subplots(img_por_coluna, img_por_coluna, figsize=(10, 10))
-    imagens = img_por_coluna ** 2 
-
-    for i in range(imagens):
-        if i >= imagens:
-            break  
+    fig, axs = plt.subplots(img_por_coluna, img_por_coluna, figsize=(10, 10))
+    imagens_por_plot = img_por_coluna ** 2 
+    
+    for i in range(imagens_por_plot):
+        if i >= len(dataframe_gerador.filenames):
+            break
+        
+        # Carrega um batch de imagens e labels
         batch = next(dataframe_gerador)
-        image = batch[0][0]  
-        label = batch[1][0] 
+        imagens = batch[0]
+        labels = batch[1]
         
-        # Normaliza os valores dos pixels para o intervalo [0, 1]
-        image = (image - image.min()) / (image.max() - image.min())
-        
-        axs[i // 3, i % 3].imshow(image)
-        axs[i // 3, i % 3].axis('off')  
-        axs[i // 3, i % 3].set_title(f"Classe: {label}")  # Título da imagem
+        # Itera sobre as imagens no batch
+        for j in range(len(imagens)):
+            image = imagens[j]
+            label = labels[j]
+            
+            # Normaliza os valores dos pixels para o intervalo [0, 1]
+            image = (image - image.min()) / (image.max() - image.min())
+            
+            # Plota a imagem no subplot correspondente
+            axs[i // img_por_coluna, i % img_por_coluna].imshow(image)
+            axs[i // img_por_coluna, i % img_por_coluna].axis('off')  
+            axs[i // img_por_coluna, i % img_por_coluna].set_title(f"Classe: {label}")  # Título da imagem
 
     plt.tight_layout()
     plt.show()
@@ -104,18 +114,17 @@ def plot_confusion_matrix(y_true, y_pred, labels, save_path, title):
     plt.savefig(save_path)
     plt.close()
 
-def plot_confusion_matrix2(y_true, y_pred, labels):
-    """
-    Plota uma matriz de confusão.
+def exibir_primeiras_imagens(dataframe):
+    # Pegar os caminhos das 9 primeiras imagens
+    caminhos_imagens = dataframe['caminho_imagem'].iloc[:9].tolist()
 
-    Args:
-    - y_true (array): rótulos verdadeiros.
-    - y_pred (array): rótulos previstos.
-    - labels (list): lista de rótulos das classes.
-    """
-    cm = confusion_matrix(y_true, y_pred)
-    plt.figure(figsize=(10, 7))
-    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=labels, yticklabels=labels)
-    plt.xlabel('Predicted')
-    plt.ylabel('True')
-    plt.close()
+    # Configurar a exibição das imagens
+    plt.figure(figsize=(12, 8))
+    for i, caminho in enumerate(caminhos_imagens):
+        plt.subplot(3, 3, i + 1)
+        img = Image.open(caminho)
+        plt.imshow(img)
+        plt.axis('off')
+        plt.title(f'Imagem {i + 1}')
+    plt.tight_layout()
+    plt.show()

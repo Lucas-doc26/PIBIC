@@ -4,41 +4,45 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from PIL import Image
 import tensorflow as tf
-import keras
-import seaborn as sns
-from sklearn.metrics import confusion_matrix
-from tensorflow.keras.callbacks import ModelCheckpoint
-from segmentandoDatasets import segmentadando_datasets, csv_para_dicionario
-from visualizacao import *
-from preprocessamento import preprocessamento, preprocessamento_dataframe_teste
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+from tensorflow.keras.preprocessing.image import load_img, img_to_array
 from modelos import carrega_modelo
+from preprocessamento import *
+from visualizacao import plot_confusion_matrix
 
+# Desativar TF_ENABLE_ONEDNN_OPTS para evitar problemas com o TensorFlow
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 
-modelo_PUC_Congelado = carrega_modelo('Modelos_keras/PUC_Congelado_mobilenetv3.keras','weights_finais/PUC_Congelado_mobilenetv3.weights.h5')
+# Carregar modelo previamente treinado
+modelo_PUC_Congelado = carrega_modelo('Modelos_keras/PUC_Congelado_mobilenetv3.keras', 'weights_finais/PUC_Congelado_mobilenetv3.weights.h5')
 
-_, _, dataset_PUC = preprocessamento("Datasets_csv/df_PUC.csv")
+# Carregar dados para teste (pode ser alterado para 'teste' ou 'val')
+csv, df_g, df = preprocessamento_dataframe_teste("Datasets_csv/df_PUC.csv")
 
-x_val, y_val = next(dataset_PUC)
+# Obter caminhos das imagens e rótulos reais
+caminhos_imagens = df['caminho_imagem'].tolist()
+rotulos_reais = df['classe'].values  
+print(rotulos_reais)
 
-print(x_val, y_val)
+# Mapear rótulos para binário
+rotulos_binarios = mapear_rotulos_binarios(rotulos_reais)
 
-predicoes = modelo_PUC_Congelado.predict(dataset_PUC)
-#print(predicoes)
-predicoes = np.argmax(predicoes, axis=1)
-#print(predicoes)
+# Carregar e pré-processar imagens
+imagens = carregar_e_preprocessar_imagens(caminhos_imagens)
+predicoes = modelo_PUC_Congelado.predict(imagens).argmax(axis=1)
 
-conf_matrix = confusion_matrix(dataset_PUC.labels, predicoes)
+# Definir labels para a matriz de confusão
+labels = ['Empty', 'Occupied']
 
-"""print(conf_matrix)"""
+# Calcular a matriz de confusão
+matriz_confusao = confusion_matrix(rotulos_binarios, predicoes)
 
-plt.figure(figsize=(10, 8))
-sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='Blues', 
-            xticklabels=['empty', 'occupied'], 
-            yticklabels=['empty', 'occupied'])
-plt.xlabel('Predito')
-plt.ylabel('Verdadeiro')
+# Exibir a matriz de confusão
+disp = ConfusionMatrixDisplay(confusion_matrix=matriz_confusao, display_labels=labels)
+plt.figure(figsize=(8, 6))
+disp.plot(cmap=plt.cm.Blues, values_format='.0f')
 plt.title('Matriz de Confusão')
+plt.xlabel('Predições')
+plt.ylabel('Rótulos Reais')
+plt.grid(False)
 plt.show()
-
-
