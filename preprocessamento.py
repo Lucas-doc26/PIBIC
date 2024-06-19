@@ -9,7 +9,7 @@ from typing import List
 
 def preprocessamento(caminho:str) -> List[tuple]:
     """
-    Ao passar um dataFrame .csv, ele irá retornar uma tupla com 3 dataFrames gerados: treino, teste e validação
+    Ao passar um dataFrame .csv, ele irá retornar uma tupla com 3 dataFrames gerados e 3 dataframes com os caminhos: treino, teste e validação
     """
     
     dataframe = pd.read_csv(caminho)
@@ -59,7 +59,7 @@ def preprocessamento(caminho:str) -> List[tuple]:
 
 def preprocessamento_dataframe_teste(caminho:str):
     """
-    Retorna o dataFrame lido pelo csv e o dataFrame gerado pelo ImageDataGenerator
+    Retorna o dataFrame gerado pelo ImageDataGenerator e o dataFrame com os caminhos e classe
     """
     
     img_width, img_height = 256, 256
@@ -76,7 +76,7 @@ def preprocessamento_dataframe_teste(caminho:str):
             class_mode='binary'
         )
     
-    return dataframe, dataframe_gerador, dataframe
+    return dataframe_gerador, dataframe
 
 def carregar_e_preprocessar_imagens(caminhos_imagens, target_size=(256, 256)):
     imagens = []

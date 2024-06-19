@@ -32,7 +32,7 @@ def segmentadando_datasets(quantidade_PUC:int=None, quantidade_UFPR04:int=None, 
         classes = []
         for tempo in tempos:
             sample_dir = os.path.join(
-                r"C:\Users\lucaa\Downloads\PKLot\PKLot\PKLotSegmented",
+                r"/home/lucas/Downloads/PKLot/PKLotSegmented/",
                 local, tempo)
                 #"C:\Users\lucaa\Downloads\PKLot\PKLot\PKLotSegmented"
                 #/home/lucas/Downloads/PKLot/PKLotSegmented/

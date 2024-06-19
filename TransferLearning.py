@@ -23,10 +23,10 @@ os.environ["XLA_FLAGS"] = "--xla_gpu_cuda_data_dir=/usr/lib/cuda/"
 
 def teste_modelos(caminho:str, num:int):
     """
-    Compila e treina o modelo e faz evaluate com todos os datasets
+    Compila e treina o modelo e faz evaluate com todos os datasets, salva os resultado em /Resultados/teste_{Nome do Modelo}
     """
 
-    treino, validacao, teste = preprocessamento(caminho)
+    treino, validacao, teste, _, _, _ = preprocessamento(caminho)
     model = cria_modelo_mobileNetV3(num)
     model.summary(show_trainable=True)
 
@@ -63,8 +63,8 @@ def teste_modelos(caminho:str, num:int):
 
     filename = f"Resultados/teste_{nome_Modelo}_{'Congelado' if num == 0 else 'Descongelado'}"
     with open(filename, 'w') as f:
-        _, dataset_1 = preprocessamento_dataframe_teste(dataset_paths.get(nome_Modelo))
-        _, dataset_2 = preprocessamento_dataframe_teste('Datasets_csv/df_UFPR05.csv' if nome_Modelo != 'UFPR05' else 'Datasets_csv/df_UFPR04.csv')
+        dataset_1, _ = preprocessamento_dataframe_teste(dataset_paths.get(nome_Modelo))
+        dataset_2, _ = preprocessamento_dataframe_teste('Datasets_csv/df_UFPR05.csv' if nome_Modelo != 'UFPR05' else 'Datasets_csv/df_UFPR04.csv')
 
         modelo = keras.models.load_model(model_save_path)  # Carregar o modelo original
 
@@ -78,6 +78,7 @@ def teste_modelos(caminho:str, num:int):
 
         for modelos, accuracy in test_results.items():
             print(f"{modelos} - precisão de {accuracy:.3f} ", file=f)
+            
 #Exemplo de criação dos modelos:
 """print("Modelos sem o Fine Tuning:\n")
 teste_modelos('Datasets_csv/df_PUC.csv', 0)
@@ -89,10 +90,14 @@ teste_modelos('Datasets_csv/df_PUC.csv', 2)
 teste_modelos('Datasets_csv/df_UFPR04.csv', 2)
 teste_modelos('Datasets_csv/df_UFPR05.csv', 2)"""
 
-def predict_e_matriz_de_confusao():
-    PUC_csv, PUC, PUC_df = preprocessamento_dataframe_teste('Datasets_csv/df_PUC.csv')
-    UFPR04_csv, UFPR04, UFPR04_df  = preprocessamento_dataframe_teste('Datasets_csv/df_UFPR04.csv')
-    UFPR05_csv, UFPR05, UFPR05_df = preprocessamento_dataframe_teste('Datasets_csv/df_UFPR05.csv')
+def predict_e_matriz_de_confusao(img_por_coluna:int=3):
+    """
+    Faz os predicts com cada Modelo x Dataset, cria sua matriz de confusão e mostra quais foram os erros
+    """
+
+    PUC, PUC_df = preprocessamento_dataframe_teste('Datasets_csv/df_PUC.csv')
+    UFPR04, UFPR04_df  = preprocessamento_dataframe_teste('Datasets_csv/df_UFPR04.csv')
+    UFPR05, UFPR05_df = preprocessamento_dataframe_teste('Datasets_csv/df_UFPR05.csv')
 
     modelos = {
         'PUC_Congelado': r'Modelos_keras/PUC_Congelado_mobilenetv3.keras',
@@ -137,14 +142,13 @@ def predict_e_matriz_de_confusao():
             titulo_matriz = f'Matriz de Confusão - {modelo_nome} vs {dataset_nome}'
             plot_confusion_matrix(y_binario, y_predicao, labels, save_path_matriz, titulo_matriz)
 
+            #Pega quais foram os errados
             indices_incorretos = np.where(y_predicao != y_binario)[0]
 
-            # Limitar a no máximo 9 imagens para plotagem
-            num_imagens_plotadas = min(len(indices_incorretos), 9)
+            num_imagens_plotadas = min(len(indices_incorretos), img_por_coluna**2)
             indices_plotados = indices_incorretos[:num_imagens_plotadas]
 
-            # Configurar a grade de subplots 3x3
-            fig, axes = plt.subplots(3, 3, figsize=(15, 15))
+            fig, axes = plt.subplots(img_por_coluna, img_por_coluna, figsize=(15, 15))
             axes = axes.flatten()
 
             for ax, indice in zip(axes, indices_plotados):
@@ -154,7 +158,7 @@ def predict_e_matriz_de_confusao():
                 ax.axis('off')
 
             # Remover qualquer eixo vazio
-            for i in range(num_imagens_plotadas, 9):
+            for i in range(num_imagens_plotadas, img_por_coluna**2):
                 axes[i].axis('off')
 
             plt.tight_layout()
@@ -164,7 +168,7 @@ def predict_e_matriz_de_confusao():
             plt.close()
 
 # Exemplo: 
-predict_e_matriz_de_confusao()
+predict_e_matriz_de_confusao(5)
 
 
 
