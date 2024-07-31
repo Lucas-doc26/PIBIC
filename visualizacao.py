@@ -3,6 +3,10 @@ from PIL import Image
 import seaborn as sns
 from sklearn.metrics import confusion_matrix
 import pandas
+import os
+import numpy as np
+from tensorflow.keras.preprocessing.image import load_img, img_to_array
+
 
 def plot_history(history):
   """
@@ -128,3 +132,49 @@ def exibir_primeiras_imagens(dataframe):
         plt.title(f'Imagem {i + 1}')
     plt.tight_layout()
     plt.show()
+
+def plot_imagens_incorretas(y_binario, y_predicao, caminhos_imagens, modelo_nome:str, dataset_nome:str, n_imagens_por_grade:3):
+    """
+    Plota imagens cujas previsões foram incorretas.
+
+    Parâmetros:
+    - y_binario: Array numpy com os rótulos reais.
+    - y_predicao: Array numpy com as previsões do modelo.
+    - caminhos_imagens: Lista de caminhos para as imagens correspondentes.
+    - modelo_nome: Nome do modelo para fins de salvamento de arquivo.
+    - dataset_nome: Nome do dataset para fins de salvamento de arquivo.
+    - n_imagens_por_grade: Número de imagens por grade na visualização (default: 3).
+
+    A função identifica as imagens onde as previsões do modelo diferem dos rótulos reais,
+    e plota estas imagens junto com suas previsões e rótulos reais. As imagens são organizadas
+    em uma grade de subplots para visualização fácil. As imagens incorretamente previstas são
+    salvas em um arquivo PNG com base nos nomes do modelo e do dataset fornecidos.
+    """
+
+    labels = ['Empty', 'Occupied']
+
+    indices_incorretos = np.where(y_predicao != y_binario)[0]
+
+    num_imagens_plotadas = min(len(indices_incorretos), n_imagens_por_grade**2)
+    indices_plotados = indices_incorretos[:num_imagens_plotadas]
+
+    fig, axes = plt.subplots(n_imagens_por_grade, n_imagens_por_grade, figsize=(15, 15))
+    axes = axes.flatten()
+
+    plt.suptitle(f'{modelo_nome} vs {dataset_nome} - Imagens incorretas', fontsize=16)
+    for ax, indice in zip(axes, indices_plotados):
+        img = load_img(caminhos_imagens[indice])
+        ax.imshow(img)
+        ax.set_title(f'Predição: {labels[y_predicao[indice]]}\nReal: {labels[y_binario[indice]]}')
+        ax.axis('off')
+
+    # Remover qualquer eixo vazio
+    for i in range(num_imagens_plotadas, n_imagens_por_grade**2):
+        axes[i].axis('off')
+
+    plt.tight_layout()
+    save_path_imgs = os.path.join('Resultados', 'Imagens_Incorretas', modelo_nome, f'{modelo_nome}_vs_{dataset_nome}_imagens_incorretas.png')
+    os.makedirs(os.path.dirname(save_path_imgs), exist_ok=True)
+    plt.savefig(save_path_imgs)
+    plt.close()
+

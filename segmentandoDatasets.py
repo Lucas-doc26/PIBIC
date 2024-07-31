@@ -6,7 +6,8 @@ from typing import Tuple, Optional
 
 def segmentadando_datasets(quantidade_PUC:int=None, quantidade_UFPR04:int=None, quantidade_UFPR05:int=None) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """
-    Função para criar os datasets, retorna 3 DataFrames separados, um para cada faculdade.
+    Função para criar os datasets csv.\n
+    Caso queira eles como lista, retorna uma tupla com os datasets separados em ordem PUC, UFPR04, UFPR05
     """
     faculdades = ['PUC', 'UFPR04', 'UFPR05']
     
@@ -89,10 +90,10 @@ def segmentadando_datasets(quantidade_PUC:int=None, quantidade_UFPR04:int=None, 
     return tuple(dataframes)
 
 # Exemplo de usos: 
-#dataframePuc1, dataframeUFPR041, dataframeUFPR051 = segmentadando_datasets()
-dataframePuc, dataframeUFPR04, dataframeUFPR05 = segmentadando_datasets(1000, 1000, 1000)
+#dataframePuc1, dataframeUFPR041, dataframeUFPR051 = segmentadando_datasets() -> Cria o csv/var com todos os arquivos 
+#dataframePuc, dataframeUFPR04, dataframeUFPR05 = segmentadando_datasets(1000, 1000, 1000) -> Cria o csv/var com o limite
+#segmentadando_datasets(1000, 1000, 1000) -> Cria somente os csv 
 
-    
 def csv_para_dicionario(caminho):
     # Dicionário para armazenar os dados do CSV
     dados = {}

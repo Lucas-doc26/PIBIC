@@ -11,9 +11,9 @@ from tensorflow.keras.preprocessing.image import load_img, img_to_array
 from sklearn.metrics import confusion_matrix
 from tensorflow.keras.callbacks import ModelCheckpoint
 from segmentandoDatasets import segmentadando_datasets, csv_para_dicionario
-from visualizacao import plot_confusion_matrix
-from preprocessamento import preprocessamento, preprocessamento_dataframe_teste, mapear_rotulos_binarios, carregar_e_preprocessar_imagens
-from modelos import carrega_modelo, cria_modelo_mobileNetV3
+from visualizacao import plot_confusion_matrix, plot_imagens_incorretas
+from preprocessamento import preprocessamento, preprocessamento_dataframe, mapear_rotulos_binarios, carregar_e_preprocessar_imagens
+from modelos import carrega_modelo, modelo_mobileNetV3Small
 
 
 os.environ["CUDNN_PATH"] = "/home/lucas/Documents/.venv/lib/python3.11/site-packages/nvidia/cudnn"
@@ -27,7 +27,7 @@ def teste_modelos(caminho:str, num:int):
     """
 
     treino, validacao, teste = preprocessamento(caminho)
-    model = cria_modelo_mobileNetV3(num)
+    model = modelo_mobileNetV3Small(num)
     model.summary(show_trainable=True)
 
     base_learning_rate = 0.0001
@@ -63,8 +63,8 @@ def teste_modelos(caminho:str, num:int):
 
     filename = f"Resultados/teste_{nome_Modelo}_{'Congelado' if num == 0 else 'Descongelado'}"
     with open(filename, 'w') as f:
-        _, dataset_1 = preprocessamento_dataframe_teste(dataset_paths.get(nome_Modelo))
-        _, dataset_2 = preprocessamento_dataframe_teste('Datasets_csv/df_UFPR05.csv' if nome_Modelo != 'UFPR05' else 'Datasets_csv/df_UFPR04.csv')
+        _, dataset_1 = preprocessamento_dataframe(dataset_paths.get(nome_Modelo))
+        _, dataset_2 = preprocessamento_dataframe('Datasets_csv/df_UFPR05.csv' if nome_Modelo != 'UFPR05' else 'Datasets_csv/df_UFPR04.csv')
 
         modelo = keras.models.load_model(model_save_path)  # Carregar o modelo original
 
@@ -90,9 +90,9 @@ teste_modelos('Datasets_csv/df_UFPR04.csv', 2)
 teste_modelos('Datasets_csv/df_UFPR05.csv', 2)"""
 
 def predict_e_matriz_de_confusao():
-    PUC_csv, PUC, PUC_df = preprocessamento_dataframe_teste('Datasets_csv/df_PUC.csv')
-    UFPR04_csv, UFPR04, UFPR04_df  = preprocessamento_dataframe_teste('Datasets_csv/df_UFPR04.csv')
-    UFPR05_csv, UFPR05, UFPR05_df = preprocessamento_dataframe_teste('Datasets_csv/df_UFPR05.csv')
+    PUC_df, PUC= preprocessamento_dataframe('Datasets_csv/df_PUC.csv')
+    UFPR04_df, UFPR04,  = preprocessamento_dataframe('Datasets_csv/df_UFPR04.csv')
+    UFPR05_df, UFPR05 = preprocessamento_dataframe('Datasets_csv/df_UFPR05.csv')
 
     modelos = {
         'PUC_Congelado': r'Modelos_keras/PUC_Congelado_mobilenetv3.keras',
@@ -136,32 +136,7 @@ def predict_e_matriz_de_confusao():
             save_path_matriz = os.path.join('Resultados', 'Matriz_de_confusao', modelo_nome, f'{modelo_nome}_vs_{dataset_nome}_matriz_de_confusao.png')
             titulo_matriz = f'Matriz de Confusão - {modelo_nome} vs {dataset_nome}'
             plot_confusion_matrix(y_binario, y_predicao, labels, save_path_matriz, titulo_matriz)
-
-            indices_incorretos = np.where(y_predicao != y_binario)[0]
-
-            # Limitar a no máximo 9 imagens para plotagem
-            num_imagens_plotadas = min(len(indices_incorretos), 9)
-            indices_plotados = indices_incorretos[:num_imagens_plotadas]
-
-            # Configurar a grade de subplots 3x3
-            fig, axes = plt.subplots(3, 3, figsize=(15, 15))
-            axes = axes.flatten()
-
-            for ax, indice in zip(axes, indices_plotados):
-                img = load_img(caminhos_imagens[indice])
-                ax.imshow(img)
-                ax.set_title(f'Predição: {labels[y_predicao[indice]]}\nReal: {labels[y_binario[indice]]}')
-                ax.axis('off')
-
-            # Remover qualquer eixo vazio
-            for i in range(num_imagens_plotadas, 9):
-                axes[i].axis('off')
-
-            plt.tight_layout()
-            save_path_imgs = os.path.join('Resultados', 'Imagens_Incorretas', modelo_nome, f'{modelo_nome}_vs_{dataset_nome}_imagens_incorretas.png')
-            os.makedirs(os.path.dirname(save_path_imgs), exist_ok=True)
-            plt.savefig(save_path_imgs)
-            plt.close()
+            plot_imagens_incorretas(y_binario, y_predicao, caminhos_imagens, modelo_nome, dataset_nome, 3)
 
 # Exemplo: 
 predict_e_matriz_de_confusao()

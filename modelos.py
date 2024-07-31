@@ -16,10 +16,11 @@ from sklearn.model_selection import train_test_split
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras import datasets, layers, models, losses
 
-def cria_modelo_mobileNetV3(trainable_conv:int):
+def modelo_mobileNetV3Small(trainable_conv:int):
     """
     Cria o modelo com base no MobileNetV3Small, usando os pesos da imagenet\n
     """
+    
     img_width, img_height = 256, 256 
     base_modelo = MobileNetV3Small(weights='imagenet', include_top=False, input_shape=(img_width, img_height, 3), pooling='avg')
     for layer in base_modelo.layers:
