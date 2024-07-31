@@ -26,14 +26,9 @@ def teste_modelos(caminho:str, num:int):
     Compila e treina o modelo e faz evaluate com todos os datasets, salva os resultado em /Resultados/teste_{Nome do Modelo}
     """
 
-<<<<<<< HEAD
     treino, validacao, teste = preprocessamento(caminho)
     model = modelo_mobileNetV3Small(num)
-=======
     treino, validacao, teste, _, _, _ = preprocessamento(caminho)
-    model = cria_modelo_mobileNetV3(num)
->>>>>>> 49c525c2001e2350db43b819704c1eeff1f0d7fc
-    model.summary(show_trainable=True)
 
     base_learning_rate = 0.0001
     model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=base_learning_rate),
@@ -68,13 +63,8 @@ def teste_modelos(caminho:str, num:int):
 
     filename = f"Resultados/teste_{nome_Modelo}_{'Congelado' if num == 0 else 'Descongelado'}"
     with open(filename, 'w') as f:
-<<<<<<< HEAD
         _, dataset_1 = preprocessamento_dataframe(dataset_paths.get(nome_Modelo))
         _, dataset_2 = preprocessamento_dataframe('Datasets_csv/df_UFPR05.csv' if nome_Modelo != 'UFPR05' else 'Datasets_csv/df_UFPR04.csv')
-=======
-        dataset_1, _ = preprocessamento_dataframe_teste(dataset_paths.get(nome_Modelo))
-        dataset_2, _ = preprocessamento_dataframe_teste('Datasets_csv/df_UFPR05.csv' if nome_Modelo != 'UFPR05' else 'Datasets_csv/df_UFPR04.csv')
->>>>>>> 49c525c2001e2350db43b819704c1eeff1f0d7fc
 
         modelo = keras.models.load_model(model_save_path)  # Carregar o modelo original
 
@@ -100,21 +90,10 @@ teste_modelos('Datasets_csv/df_PUC.csv', 2)
 teste_modelos('Datasets_csv/df_UFPR04.csv', 2)
 teste_modelos('Datasets_csv/df_UFPR05.csv', 2)"""
 
-<<<<<<< HEAD
 def predict_e_matriz_de_confusao():
     PUC_df, PUC= preprocessamento_dataframe('Datasets_csv/df_PUC.csv')
     UFPR04_df, UFPR04,  = preprocessamento_dataframe('Datasets_csv/df_UFPR04.csv')
     UFPR05_df, UFPR05 = preprocessamento_dataframe('Datasets_csv/df_UFPR05.csv')
-=======
-def predict_e_matriz_de_confusao(img_por_coluna:int=3):
-    """
-    Faz os predicts com cada Modelo x Dataset, cria sua matriz de confusão e mostra quais foram os erros
-    """
-
-    PUC, PUC_df = preprocessamento_dataframe_teste('Datasets_csv/df_PUC.csv')
-    UFPR04, UFPR04_df  = preprocessamento_dataframe_teste('Datasets_csv/df_UFPR04.csv')
-    UFPR05, UFPR05_df = preprocessamento_dataframe_teste('Datasets_csv/df_UFPR05.csv')
->>>>>>> 49c525c2001e2350db43b819704c1eeff1f0d7fc
 
     modelos = {
         'PUC_Congelado': r'Modelos_keras/PUC_Congelado_mobilenetv3.keras',
@@ -158,35 +137,7 @@ def predict_e_matriz_de_confusao(img_por_coluna:int=3):
             save_path_matriz = os.path.join('Resultados', 'Matriz_de_confusao', modelo_nome, f'{modelo_nome}_vs_{dataset_nome}_matriz_de_confusao.png')
             titulo_matriz = f'Matriz de Confusão - {modelo_nome} vs {dataset_nome}'
             plot_confusion_matrix(y_binario, y_predicao, labels, save_path_matriz, titulo_matriz)
-<<<<<<< HEAD
             plot_imagens_incorretas(y_binario, y_predicao, caminhos_imagens, modelo_nome, dataset_nome, 3)
-=======
-
-            #Pega quais foram os errados
-            indices_incorretos = np.where(y_predicao != y_binario)[0]
-
-            num_imagens_plotadas = min(len(indices_incorretos), img_por_coluna**2)
-            indices_plotados = indices_incorretos[:num_imagens_plotadas]
-
-            fig, axes = plt.subplots(img_por_coluna, img_por_coluna, figsize=(15, 15))
-            axes = axes.flatten()
-
-            for ax, indice in zip(axes, indices_plotados):
-                img = load_img(caminhos_imagens[indice])
-                ax.imshow(img)
-                ax.set_title(f'Predição: {labels[y_predicao[indice]]}\nReal: {labels[y_binario[indice]]}')
-                ax.axis('off')
-
-            # Remover qualquer eixo vazio
-            for i in range(num_imagens_plotadas, img_por_coluna**2):
-                axes[i].axis('off')
-
-            plt.tight_layout()
-            save_path_imgs = os.path.join('Resultados', 'Imagens_Incorretas', modelo_nome, f'{modelo_nome}_vs_{dataset_nome}_imagens_incorretas.png')
-            os.makedirs(os.path.dirname(save_path_imgs), exist_ok=True)
-            plt.savefig(save_path_imgs)
-            plt.close()
->>>>>>> 49c525c2001e2350db43b819704c1eeff1f0d7fc
 
 # Exemplo: 
 predict_e_matriz_de_confusao(5)

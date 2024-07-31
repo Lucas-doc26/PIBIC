@@ -7,13 +7,7 @@ import matplotlib.pyplot as plt
 from tensorflow.keras.preprocessing.image import load_img, img_to_array
 from typing import List, Tuple
 
-<<<<<<< HEAD
 def preprocessamento(caminho: str, proporcao_treino: float = 0.6, proporcao_teste: float = 0.2, proporcao_validacao: float = 0.2, autoencoder: bool = False):
-=======
-def preprocessamento(caminho:str) -> List[tuple]:
-    """
-    Ao passar um dataFrame .csv, ele irá retornar uma tupla com 3 dataFrames gerados e 3 dataframes com os caminhos: treino, teste e validação
->>>>>>> 49c525c2001e2350db43b819704c1eeff1f0d7fc
     """
     Ao passar um dataFrame .csv, ele irá retornar geradores de dados para treino, teste e validação + os 3 .csv dividos igualmente os geradores.
     
@@ -95,11 +89,7 @@ def preprocessamento_dataframe(caminho:str):
             class_mode='binary'
         )
     
-<<<<<<< HEAD
     return dataframe, dataframe_gerador
-=======
-    return dataframe_gerador, dataframe
->>>>>>> 49c525c2001e2350db43b819704c1eeff1f0d7fc
 
 def carregar_e_preprocessar_imagens(caminhos_imagens, target_size=(256, 256)):
     """
